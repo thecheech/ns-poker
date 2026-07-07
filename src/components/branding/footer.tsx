@@ -2,9 +2,9 @@ import { GITHUB_REPO_URL, KOBY_PROFILE_URL } from "@/lib/constants";
 
 export function AppFooter() {
   return (
-    <footer className="relative z-10 shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-md">
-      <div className="mx-auto w-full max-w-lg px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        <p className="text-center text-sm text-muted-foreground">
+    <footer className="relative z-10 mt-8 shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-md sm:mt-10">
+      <div className="mx-auto w-full max-w-lg px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:py-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <p className="text-center text-[0.8125rem] text-muted-foreground sm:text-sm">
         Built by{" "}
         <a
           href={KOBY_PROFILE_URL}

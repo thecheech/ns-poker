@@ -38,11 +38,11 @@ export function CreateTableButton() {
   return (
     <Button
       type="button"
-      className="glitch-button h-14 w-full text-base font-semibold shadow-[0_0_24px_oklch(0.72_0.17_155_/_18%)]"
+      className="glitch-button h-11 w-full rounded-xl text-[0.9375rem] font-semibold shadow-[0_0_20px_oklch(0.72_0.17_155_/_16%)] sm:h-12 sm:text-base"
       onClick={handleCreate}
       disabled={isPending}
     >
-      <Plus className="size-5" />
+      <Plus className="size-4 sm:size-[1.125rem]" />
       {isPending ? "Creating..." : "Create table"}
     </Button>
   );

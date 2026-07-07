@@ -6,7 +6,7 @@ export async function RecentTablesList() {
 
   if (tables.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed bg-card/50 px-4 py-6 text-center text-sm text-muted-foreground">
+      <p className="rounded-xl border border-dashed bg-card/50 px-4 py-5 text-center text-[0.8125rem] text-muted-foreground sm:rounded-2xl sm:py-6 sm:text-sm">
         Tables you create will show up here.
       </p>
     );

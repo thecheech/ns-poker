@@ -2,6 +2,7 @@
 
 import { signIn, signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function useCanEdit(): boolean {
   const { status } = useSession();
@@ -12,12 +13,16 @@ export function promptGoogleSignIn(): void {
   void signIn("google", { callbackUrl: window.location.href });
 }
 
-export function AuthButton() {
+interface AuthButtonProps {
+  className?: string;
+}
+
+export function AuthButton({ className }: AuthButtonProps = {}) {
   const { data: session, status } = useSession();
 
   if (status === "loading") {
     return (
-      <span className="text-xs text-muted-foreground" aria-hidden>
+      <span className={cn("text-xs text-muted-foreground", className)} aria-hidden>
         …
       </span>
     );
@@ -25,19 +30,21 @@ export function AuthButton() {
 
   if (session?.user) {
     return (
-      <div className="flex max-w-[11rem] items-center gap-2">
+      <div className={cn("flex max-w-[9.5rem] items-center gap-1.5 sm:max-w-[11rem] sm:gap-2", className)}>
         {session.user.image ? (
           <img
             src={session.user.image}
             alt=""
-            className="size-7 shrink-0 rounded-full object-cover"
+            className="size-6 shrink-0 rounded-full object-cover sm:size-7"
           />
         ) : null}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-medium">{session.user.name ?? "Signed in"}</p>
+          <p className="truncate text-[0.6875rem] font-medium leading-tight sm:text-xs">
+            {session.user.name ?? "Signed in"}
+          </p>
           <button
             type="button"
-            className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+            className="-my-0.5 py-0.5 text-[0.6875rem] text-muted-foreground transition-colors hover:text-foreground sm:text-xs"
             onClick={() => signOut({ callbackUrl: "/" })}
           >
             Sign out
@@ -52,7 +59,7 @@ export function AuthButton() {
       type="button"
       variant="outline"
       size="sm"
-      className="h-8 shrink-0 px-2.5 text-xs"
+      className={cn("h-8 shrink-0 px-2.5 text-[0.6875rem] sm:text-xs", className)}
       onClick={() => promptGoogleSignIn()}
     >
       Sign in with Google

@@ -16,7 +16,7 @@ export function NsLogoMark({
   className?: string;
   size?: "sm" | "md";
 }) {
-  const dimension = size === "sm" ? 32 : 40;
+  const dimension = size === "sm" ? 32 : 36;
 
   return (
     <Image
@@ -26,7 +26,7 @@ export function NsLogoMark({
       height={dimension}
       className={cn(
         "shrink-0 rounded-full object-cover",
-        size === "sm" ? "size-8" : "size-10",
+        size === "sm" ? "size-8" : "size-9 sm:size-10",
         className,
       )}
       aria-hidden
@@ -40,20 +40,20 @@ export function NsLogo({
   showTagline = true,
 }: NsLogoProps) {
   return (
-    <div className={cn("flex items-center gap-2.5", className)}>
+    <div className={cn("flex items-center gap-2 sm:gap-2.5", className)}>
       <NsLogoMark size={size} />
       <div className="min-w-0">
         <p
           className={cn(
             "glitch-text glitch-title truncate font-semibold tracking-tight",
-            size === "sm" ? "text-base" : "text-lg",
+            size === "sm" ? "text-[0.9375rem] sm:text-base" : "text-base sm:text-lg",
           )}
           data-text="NS Poker"
         >
           NS Poker
         </p>
         {showTagline ? (
-          <p className="truncate text-xs text-muted-foreground max-sm:hidden">
+          <p className="truncate text-[0.6875rem] leading-tight text-muted-foreground sm:text-xs">
             Network School poker nights
           </p>
         ) : null}

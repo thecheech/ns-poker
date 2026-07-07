@@ -74,16 +74,16 @@ export function DeleteTableButton({
     <Button
       type="button"
       variant="ghost"
-      size="icon-xs"
+      size="icon-sm"
       className={cn(
-        "size-5 shrink-0 text-muted-foreground/45 hover:text-destructive",
+        "size-9 shrink-0 text-muted-foreground/50 hover:text-destructive sm:size-8",
         className,
       )}
       onClick={handleDelete}
       disabled={isPending}
       aria-label="Delete game"
     >
-      <Trash2 className="size-3" />
+      <Trash2 className="size-3.5 sm:size-3" />
     </Button>
   );
 }
