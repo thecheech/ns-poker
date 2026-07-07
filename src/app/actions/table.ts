@@ -316,6 +316,26 @@ export async function markTransferPaidAction(input: {
   revalidateTable(input.slug);
 }
 
+export async function undoTransferPaidAction(input: {
+  slug: string;
+  transferId: string;
+}): Promise<void> {
+  await updateTable(input.slug, (table) => ({
+    ...table,
+    transfers: table.transfers.map((transfer) =>
+      transfer.id === input.transferId
+        ? {
+            ...transfer,
+            status: "PENDING",
+            paidAt: null,
+          }
+        : transfer,
+    ),
+  }));
+
+  revalidateTable(input.slug);
+}
+
 export async function updateTableSettingsAction(input: {
   slug: string;
   name?: string;

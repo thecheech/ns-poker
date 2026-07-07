@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { Check } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
-import { markTransferPaidAction } from "@/app/actions/table";
+import { markTransferPaidAction, undoTransferPaidAction } from "@/app/actions/table";
 import { TableCallout } from "@/components/table/table-callout";
 import { Button } from "@/components/ui/button";
 import { formatUsd } from "@/lib/format";
@@ -76,6 +76,18 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
     });
   }
 
+  function handleUndoPaid(transferId: string) {
+    startTransition(async () => {
+      try {
+        await undoTransferPaidAction({ slug: table.slug, transferId });
+        toast.success("Marked as pending");
+        mutate();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Could not update");
+      }
+    });
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 px-4 pb-8 pt-4">
       <p className="text-sm text-muted-foreground">
@@ -108,7 +120,16 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
                   <p className="text-xs text-primary tabular-nums">{formatUsd(transfer.amountUsd)}</p>
                 </div>
                 {isPaid ? (
-                  <span className="shrink-0 text-xs font-medium text-muted-foreground">Paid</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 shrink-0 px-3 text-xs"
+                    onClick={() => handleUndoPaid(transfer.id)}
+                    disabled={isPending}
+                  >
+                    Undo
+                  </Button>
                 ) : (
                   <Button
                     type="button"
