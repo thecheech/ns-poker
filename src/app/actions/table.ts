@@ -104,10 +104,6 @@ export async function addPlayerAction(input: {
   const playerNameValue = input.name.trim();
 
   await updateTable(input.slug, (current) => {
-    if (current.status !== "OPEN") {
-      throw new Error("Table is closed");
-    }
-
     return {
       ...current,
       players: [
@@ -163,10 +159,6 @@ export async function updatePlayerAction(input: {
   const nextName = input.name.trim();
 
   await updateTable(input.slug, (current) => {
-    if (current.status !== "OPEN") {
-      throw new Error("Table is closed");
-    }
-
     return {
       ...current,
       players: current.players.map((player) =>
@@ -217,10 +209,6 @@ export async function updatePlayerPaymentMethodsAction(input: {
   }
 
   await updateTable(input.slug, (current) => {
-    if (current.status === "OPEN") {
-      throw new Error("Set payment methods after closing the table");
-    }
-
     const players = current.players.map((player) =>
       player.id === input.playerId ? { ...player, paymentMethods } : player,
     );
@@ -268,10 +256,6 @@ export async function deletePlayerAction(input: {
   }
 
   await updateTable(input.slug, (current) => {
-    if (current.status !== "OPEN") {
-      throw new Error("Table is closed");
-    }
-
     return {
       ...current,
       players: current.players.filter((player) => player.id !== input.playerId),
@@ -310,10 +294,6 @@ export async function addBuyInAction(input: {
   const name = playerName(table, input.playerId);
 
   await updateTable(input.slug, (current) => {
-    if (current.status !== "OPEN") {
-      throw new Error("Table is closed");
-    }
-
     return {
       ...current,
       players: current.players.map((player) =>
@@ -382,10 +362,6 @@ export async function updateBuyInAction(input: {
   }
 
   await updateTable(input.slug, (current) => {
-    if (current.status !== "OPEN") {
-      throw new Error("Table is closed");
-    }
-
     return {
       ...current,
       players: current.players.map((item) =>
@@ -435,10 +411,6 @@ export async function deleteBuyInAction(input: {
   }
 
   await updateTable(input.slug, (current) => {
-    if (current.status !== "OPEN") {
-      throw new Error("Table is closed");
-    }
-
     return {
       ...current,
       players: current.players.map((item) =>
@@ -536,10 +508,6 @@ export async function setCashOutAction(input: {
   const previous = table.players.find((player) => player.id === input.playerId)?.cashOut;
 
   await updateTable(input.slug, (current) => {
-    if (current.status !== "CASHING_OUT" && current.status !== "SETTLED") {
-      throw new Error("Table is not in cash-out mode");
-    }
-
     const players = current.players.map((player) =>
       player.id === input.playerId
         ? {
@@ -554,7 +522,6 @@ export async function setCashOutAction(input: {
 
     return {
       ...current,
-      status: "CASHING_OUT",
       players,
       transfers: computeTransfers(players, current.chipsPerUsd, current.transfers),
     };

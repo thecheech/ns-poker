@@ -1,18 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import useSWR from "swr";
-import { ArrowRight, Check, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { reopenTableAction, setCashOutAction } from "@/app/actions/table";
+import { setCashOutAction } from "@/app/actions/table";
 import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
-import { TableCallout } from "@/components/table/table-callout";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatBuyInSummary, formatChips } from "@/lib/format";
 import { validateChipBalance } from "@/lib/settlement";
-import { cn } from "@/lib/utils";
 import type { Player, TableState } from "@/lib/types";
 
 function savedChips(player: Player): number | null {
@@ -146,18 +143,6 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
 
   if (!table) return null;
 
-  if (table.status === "OPEN") {
-    return (
-      <div className="mx-auto max-w-lg px-4 pb-8 pt-4">
-        <TableCallout
-          message="Close the table on Buy-ins before entering chip counts."
-          actionLabel="Go to Buy-ins"
-          actionHref={`/t/${table.slug}`}
-        />
-      </div>
-    );
-  }
-
   const balance = validateChipBalance(table.players);
 
   function handleCashOut(playerId: string, chips: number) {
@@ -172,22 +157,6 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
         mutate();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not save cash-out");
-      }
-    });
-  }
-
-  function handleReopen() {
-    if (!canEdit) {
-      promptGoogleSignIn();
-      return;
-    }
-
-    startTransition(async () => {
-      try {
-        await reopenTableAction(table.slug);
-        toast.success("Table reopened");
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Could not reopen");
       }
     });
   }
@@ -223,26 +192,6 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
           />
         ))}
       </div>
-
-      <Link
-        href={`/t/${table.slug}/settlement`}
-        className={cn(buttonVariants(), "h-11 w-full gap-1.5")}
-      >
-        Go to Pay up
-        <ArrowRight className="size-4" />
-      </Link>
-
-      {canEdit ? (
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10 w-full"
-          onClick={handleReopen}
-          disabled={isPending}
-        >
-          Reopen table
-        </Button>
-      ) : null}
     </div>
   );
 }

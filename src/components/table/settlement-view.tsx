@@ -8,7 +8,6 @@ import { markTransferPaidAction, undoTransferPaidAction } from "@/app/actions/ta
 import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
 import { PaymentMethodDisplay } from "@/components/table/payment-method-display";
 import { PaymentMethodSheet } from "@/components/table/payment-method-sheet";
-import { TableCallout } from "@/components/table/table-callout";
 import { Button } from "@/components/ui/button";
 import { formatChips, formatUsd } from "@/lib/format";
 import { UNMATCHED_PLAYER_ID } from "@/lib/constants";
@@ -49,18 +48,6 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
   );
 
   if (!table) return null;
-
-  if (table.status === "OPEN") {
-    return (
-      <div className="mx-auto max-w-lg px-4 pb-8 pt-4">
-        <TableCallout
-          message="Close the table and enter chip counts first."
-          actionLabel="Go to Buy-ins"
-          actionHref={`/t/${table.slug}`}
-        />
-      </div>
-    );
-  }
 
   const balance = validateChipBalance(table.players);
   const playerMap = new Map(table.players.map((player) => [player.id, player]));

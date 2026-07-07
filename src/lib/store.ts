@@ -28,7 +28,8 @@ function toRecentTableSummary(table: TableState): RecentTableSummary {
   const closedLabel = table.status === "OPEN" ? "Open" : "Closed";
 
   let paymentsLabel = "—";
-  if (table.status === "CASHING_OUT" || table.status === "SETTLED") {
+  const hasCashOuts = table.players.some((player) => player.cashOut !== null);
+  if (table.status === "CASHING_OUT" || table.status === "SETTLED" || hasCashOuts) {
     if (table.transfers.length === 0) {
       paymentsLabel = table.status === "CASHING_OUT" ? "Entering counts" : "All even";
     } else {
@@ -153,7 +154,12 @@ export async function syncSettlementTransfers(
   slug: string,
 ): Promise<TableState | null> {
   const table = await getTable(slug);
-  if (!table || table.status === "OPEN") {
+  if (!table) {
+    return table;
+  }
+
+  const hasCashOuts = table.players.some((player) => player.cashOut !== null);
+  if (table.status === "OPEN" && !hasCashOuts) {
     return table;
   }
 
