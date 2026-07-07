@@ -2,6 +2,7 @@ import type { PaymentType } from "./types";
 
 export const DEFAULT_CHIPS_PER_USD = 100;
 export const STANDARD_BUY_IN_CHIPS = 5000;
+export const GITHUB_REPO_URL = "https://github.com/thecheech/ns-poker";
 
 export const PAYMENT_TYPES: PaymentType[] = [
   "CRYPTO",
