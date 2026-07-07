@@ -121,6 +121,7 @@ export function normalizeTransferPaymentMethods(transfer: LegacyTransfer): Trans
 export function normalizeTable(table: TableState): TableState {
   return {
     ...table,
+    status: "OPEN",
     players: table.players.map((player) => normalizePlayerPaymentMethods(player)),
     transfers: table.transfers.map((transfer) =>
       normalizeTransferPaymentMethods(transfer),

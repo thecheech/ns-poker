@@ -438,57 +438,6 @@ export async function deleteBuyInAction(input: {
   revalidateTable(input.slug);
 }
 
-export async function startCashOutAction(slug: string): Promise<void> {
-  const actor = await requireAuth();
-  const table = await getTable(slug);
-  if (!table) {
-    throw new Error("Table not found");
-  }
-
-  await updateTable(slug, (current) => ({
-    ...current,
-    status: "CASHING_OUT",
-  }));
-
-  await recordAuditEvent({
-    action: "table.closed",
-    actor,
-    tableSlug: slug,
-    tableName: table.name,
-    summary: "Closed table for cash-out",
-    before: "Live",
-    after: "Cash-out",
-  });
-
-  revalidateTable(slug);
-}
-
-export async function reopenTableAction(slug: string): Promise<void> {
-  const actor = await requireAuth();
-  const table = await getTable(slug);
-  if (!table) {
-    throw new Error("Table not found");
-  }
-
-  await updateTable(slug, (current) => ({
-    ...current,
-    status: "OPEN",
-    transfers: [],
-  }));
-
-  await recordAuditEvent({
-    action: "table.reopened",
-    actor,
-    tableSlug: slug,
-    tableName: table.name,
-    summary: "Reopened table",
-    before: table.status === "SETTLED" ? "Settled" : "Cash-out",
-    after: "Live",
-  });
-
-  revalidateTable(slug);
-}
-
 export async function setCashOutAction(input: {
   slug: string;
   playerId: string;
