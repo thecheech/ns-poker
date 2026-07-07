@@ -13,10 +13,10 @@ export const KOBY_PROFILE_URL = "https://ns.com/kobykarp";
 
 export const PAYMENT_TYPES: PaymentType[] = [
   "CRYPTO",
+  "CASH",
   "PAYPAL",
   "WISE",
   "REVOLUT",
-  "CASH",
 ];
 
 export const CRYPTO_CHAINS: CryptoChain[] = [

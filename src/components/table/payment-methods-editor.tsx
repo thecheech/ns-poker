@@ -66,8 +66,10 @@ export function PaymentMethodsEditor({
 }: PaymentMethodsEditorProps) {
   const usedTypes = new Set(methods.map((method) => method.type));
   const availableTypes = PAYMENT_TYPES.filter((type) => !usedTypes.has(type));
-  const inputClassName = compact ? "h-9 text-sm" : "h-12 text-base";
-  const triggerClassName = compact ? "h-9 w-full text-sm" : "h-12 w-full text-base";
+  const inputClassName = compact ? "h-10 text-base sm:text-sm" : "h-12 text-base";
+  const triggerClassName = compact
+    ? "h-10 w-full text-base sm:text-sm"
+    : "h-12 w-full text-base";
 
   function updateMethod(index: number, patch: Partial<PaymentMethod>) {
     onChange(
@@ -90,7 +92,7 @@ export function PaymentMethodsEditor({
   }
 
   function addMethod() {
-    const nextType = availableTypes[0] ?? "CASH";
+    const nextType = availableTypes[0] ?? "CRYPTO";
     onChange([...methods, createEmptyPaymentMethod(nextType)]);
   }
 
@@ -111,7 +113,9 @@ export function PaymentMethodsEditor({
           className="space-y-2 rounded-xl border bg-muted/20 p-3"
         >
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium">#{index + 1}</p>
+            <p className="text-sm font-medium">
+              #{index + 1} · {PAYMENT_TYPE_LABELS[method.type]}
+            </p>
             <div className="flex items-center gap-1">
               {methods.length > 1 ? (
                 <>
@@ -173,7 +177,7 @@ export function PaymentMethodsEditor({
 
           {method.type === "CRYPTO" ? (
             <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor={`${idPrefix}-${index}-token`} className="text-xs">
                     Token
@@ -290,18 +294,23 @@ export function PaymentMethodsEditor({
             </div>
           ) : null}
 
-          <div className="space-y-1.5">
-            <Label htmlFor={`${idPrefix}-${index}-link`} className="text-xs">
-              Payment link
-            </Label>
-            <Input
-              id={`${idPrefix}-${index}-link`}
-              value={method.link ?? ""}
-              onChange={(event) => updateMethod(index, { link: event.target.value })}
-              placeholder="https://…"
-              className={inputClassName}
-            />
-          </div>
+          {method.type !== "CASH" ? (
+            <div className="space-y-1.5">
+              <Label htmlFor={`${idPrefix}-${index}-link`} className="text-xs">
+                Payment link
+              </Label>
+              <Input
+                id={`${idPrefix}-${index}-link`}
+                value={method.link ?? ""}
+                onChange={(event) => updateMethod(index, { link: event.target.value })}
+                placeholder="https://…"
+                className={inputClassName}
+                inputMode="url"
+                autoCapitalize="off"
+                autoCorrect="off"
+              />
+            </div>
+          ) : null}
         </div>
       ))}
 
@@ -309,7 +318,7 @@ export function PaymentMethodsEditor({
         <Button
           type="button"
           variant="outline"
-          className={compact ? "h-9 w-full text-sm" : "h-11 w-full"}
+          className={compact ? "h-10 w-full text-sm" : "h-11 w-full"}
           onClick={addMethod}
         >
           <Plus className="size-4" />

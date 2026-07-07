@@ -5,7 +5,7 @@ import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
-  formatPaymentMethodShort,
+  formatPaymentMethod,
   formatPaymentMethodsCopyText,
 } from "@/lib/format";
 import { paymentMethodHasDetails } from "@/lib/payments";
@@ -24,12 +24,10 @@ export function PaymentMethodDisplay({
 }: PaymentMethodDisplayProps) {
   const [copied, setCopied] = useState(false);
   const visibleMethods = methods.filter(paymentMethodHasDetails);
-  const primary = visibleMethods[0] ?? methods[0];
-  const primaryLabel = primary ? formatPaymentMethodShort(primary) : null;
 
-  if (!primary) {
+  if (visibleMethods.length === 0) {
     return (
-      <p className="truncate text-xs text-muted-foreground">No payment details yet</p>
+      <p className="text-xs text-muted-foreground">No payment details yet</p>
     );
   }
 
@@ -42,20 +40,27 @@ export function PaymentMethodDisplay({
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-1.5">
-      <p className="min-w-0 truncate text-xs text-muted-foreground">
-        {primaryLabel ?? "Payment details added"}
-        {visibleMethods.length > 1 ? ` · +${visibleMethods.length - 1}` : null}
-      </p>
+    <div className="space-y-2">
+      <ul className="space-y-1">
+        {visibleMethods.map((method, index) => (
+          <li
+            key={`${method.type}-${index}`}
+            className="text-xs leading-relaxed text-muted-foreground"
+          >
+            <span className="font-medium text-foreground/80">#{index + 1}</span>{" "}
+            <span className="break-words">{formatPaymentMethod(method)}</span>
+          </li>
+        ))}
+      </ul>
       <Button
         type="button"
-        variant="ghost"
-        size="icon-xs"
-        className="shrink-0 text-muted-foreground hover:text-foreground"
-        aria-label="Copy payment details"
+        variant="outline"
+        size="sm"
+        className="h-9 w-full text-xs sm:w-auto"
         onClick={handleCopy}
       >
-        {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
+        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+        {copied ? "Copied" : "Copy payment details"}
       </Button>
     </div>
   );

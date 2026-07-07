@@ -84,15 +84,19 @@ export function PaymentMethodSheet({ slug, player, onSaved }: PaymentMethodSheet
       </Button>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl">
-          <SheetHeader>
+        <SheetContent
+          side="bottom"
+          className="max-h-[90dvh] gap-0 overflow-y-auto rounded-t-2xl pb-[env(safe-area-inset-bottom)]"
+        >
+          <SheetHeader className="text-left">
             <SheetTitle>{player.name}</SheetTitle>
             <SheetDescription>
-              How to pay {player.name}. All fields are optional.
+              Add payment methods in priority order — Crypto first, then Cash, then
+              others. Payers try #1 first. All fields are optional.
             </SheetDescription>
           </SheetHeader>
 
-          <div className="px-4 pb-2">
+          <div className="px-4 pb-4">
             <PaymentMethodsEditor
               methods={methods}
               onChange={setMethods}
@@ -102,10 +106,10 @@ export function PaymentMethodSheet({ slug, player, onSaved }: PaymentMethodSheet
             />
           </div>
 
-          <SheetFooter className="border-t border-border/60">
+          <SheetFooter className="sticky bottom-0 border-t border-border/60 bg-popover pb-[max(1rem,env(safe-area-inset-bottom))]">
             <Button
               type="button"
-              className="h-10 w-full"
+              className="h-11 w-full text-base"
               onClick={handleSave}
               disabled={isPending}
             >

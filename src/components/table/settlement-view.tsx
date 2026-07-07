@@ -129,24 +129,26 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
               <div
                 key={transfer.id}
                 className={cn(
-                  "flex items-start gap-3 px-3 py-2.5",
+                  "space-y-2.5 px-3 py-3",
                   isPaid && "opacity-60",
                 )}
               >
-                <div className="min-w-0 flex-1 space-y-1">
-                  <p className="truncate font-medium">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 font-medium leading-snug">
                     {fromName} → {toName}
                   </p>
-                  <p className="text-xs text-primary tabular-nums">{formatUsd(transfer.amountUsd)}</p>
-                  {transfer.toPlayerId !== UNMATCHED_PLAYER_ID ? (
-                    <PaymentMethodDisplay
-                      recipientName={toName}
-                      amountUsd={transfer.amountUsd}
-                      methods={transfer.paymentMethods}
-                    />
-                  ) : null}
+                  <p className="shrink-0 text-sm font-medium text-primary tabular-nums">
+                    {formatUsd(transfer.amountUsd)}
+                  </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-0.5">
+                {transfer.toPlayerId !== UNMATCHED_PLAYER_ID ? (
+                  <PaymentMethodDisplay
+                    recipientName={toName}
+                    amountUsd={transfer.amountUsd}
+                    methods={transfer.paymentMethods}
+                  />
+                ) : null}
+                <div className="flex flex-wrap items-center justify-end gap-1.5">
                   {recipient ? (
                     <PaymentMethodSheet
                       slug={table.slug}

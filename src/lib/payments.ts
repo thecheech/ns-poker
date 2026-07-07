@@ -13,7 +13,7 @@ export function createEmptyPaymentMethod(type: PaymentType = "CRYPTO"): PaymentM
 }
 
 export function defaultPaymentMethods(): PaymentMethod[] {
-  return [{ type: "CASH", value: null, currency: null, link: null }];
+  return [createEmptyPaymentMethod("CRYPTO")];
 }
 
 export function normalizePaymentMethods(methods: PaymentMethod[]): PaymentMethod[] {
