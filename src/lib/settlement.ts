@@ -1,6 +1,8 @@
 import { nanoid } from "nanoid";
-import type { Player, Transfer } from "./types";
+import { UNMATCHED_PLAYER_ID } from "./constants";
 import { chipsToUsd } from "./format";
+import { defaultPaymentMethods } from "./payments";
+import type { Player, Transfer } from "./types";
 
 interface BalanceEntry {
   playerId: string;
@@ -72,6 +74,39 @@ export function computeTransfers(
 
     if (creditor.amountUsd < 0.01) i += 1;
     if (debtor.amountUsd < 0.01) j += 1;
+  }
+
+  while (i < creditors.length) {
+    const creditor = creditors[i];
+    if (creditor.amountUsd >= 0.01) {
+      const recipient = players.find((player) => player.id === creditor.playerId);
+      transfers.push({
+        id: nanoid(),
+        fromPlayerId: UNMATCHED_PLAYER_ID,
+        toPlayerId: creditor.playerId,
+        amountUsd: creditor.amountUsd,
+        paymentMethods: recipient?.paymentMethods ?? defaultPaymentMethods(),
+        status: "PENDING",
+        paidAt: null,
+      });
+    }
+    i += 1;
+  }
+
+  while (j < debtors.length) {
+    const debtor = debtors[j];
+    if (debtor.amountUsd >= 0.01) {
+      transfers.push({
+        id: nanoid(),
+        fromPlayerId: debtor.playerId,
+        toPlayerId: UNMATCHED_PLAYER_ID,
+        amountUsd: debtor.amountUsd,
+        paymentMethods: defaultPaymentMethods(),
+        status: "PENDING",
+        paidAt: null,
+      });
+    }
+    j += 1;
   }
 
   return transfers;

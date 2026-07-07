@@ -8,8 +8,17 @@ import { markTransferPaidAction, undoTransferPaidAction } from "@/app/actions/ta
 import { TableCallout } from "@/components/table/table-callout";
 import { Button } from "@/components/ui/button";
 import { formatUsd } from "@/lib/format";
+import { UNMATCHED_PLAYER_ID } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { TableState } from "@/lib/types";
+
+function transferPartyName(
+  playerId: string,
+  playerMap: Map<string, TableState["players"][number]>,
+): string {
+  if (playerId === UNMATCHED_PLAYER_ID) return "?";
+  return playerMap.get(playerId)?.name ?? "Someone";
+}
 
 interface SettlementViewProps {
   initialTable: TableState;
@@ -101,9 +110,9 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
       {table.transfers.length > 0 ? (
         <div className="divide-y divide-border/60 overflow-hidden rounded-xl border bg-card">
           {table.transfers.map((transfer) => {
-            const fromPlayer = playerMap.get(transfer.fromPlayerId);
-            const toPlayer = playerMap.get(transfer.toPlayerId);
             const isPaid = transfer.status === "PAID";
+            const fromName = transferPartyName(transfer.fromPlayerId, playerMap);
+            const toName = transferPartyName(transfer.toPlayerId, playerMap);
 
             return (
               <div
@@ -115,7 +124,7 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">
-                    {fromPlayer?.name ?? "Someone"} → {toPlayer?.name ?? "Someone"}
+                    {fromName} → {toName}
                   </p>
                   <p className="text-xs text-primary tabular-nums">{formatUsd(transfer.amountUsd)}</p>
                 </div>
