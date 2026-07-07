@@ -6,6 +6,8 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 import { markTransferPaidAction, undoTransferPaidAction } from "@/app/actions/table";
 import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
+import { PaymentMethodDisplay } from "@/components/table/payment-method-display";
+import { PaymentMethodSheet } from "@/components/table/payment-method-sheet";
 import { TableCallout } from "@/components/table/table-callout";
 import { Button } from "@/components/ui/button";
 import { formatChips, formatUsd } from "@/lib/format";
@@ -101,7 +103,7 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
   return (
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 px-4 pb-8 pt-4">
       {!balance.valid ? (
-        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
+        <p className="rounded-lg border border-amber-400/40 bg-amber-500/15 px-3 py-2 text-sm text-amber-100">
           Chip counts are off by {formatChips(Math.abs(balance.difference))}. Payments
           below may change as counts are updated on Cash-out.
         </p>
@@ -121,50 +123,78 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
             const isPaid = transfer.status === "PAID";
             const fromName = transferPartyName(transfer.fromPlayerId, playerMap);
             const toName = transferPartyName(transfer.toPlayerId, playerMap);
+            const recipient = playerMap.get(transfer.toPlayerId);
 
             return (
               <div
                 key={transfer.id}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5",
+                  "flex items-start gap-3 px-3 py-2.5",
                   isPaid && "opacity-60",
                 )}
               >
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 space-y-1">
                   <p className="truncate font-medium">
                     {fromName} → {toName}
                   </p>
                   <p className="text-xs text-primary tabular-nums">{formatUsd(transfer.amountUsd)}</p>
+                  {transfer.toPlayerId !== UNMATCHED_PLAYER_ID ? (
+                    <PaymentMethodDisplay
+                      recipientName={toName}
+                      amountUsd={transfer.amountUsd}
+                      methods={transfer.paymentMethods}
+                    />
+                  ) : null}
                 </div>
-                {canEdit ? (
-                  isPaid ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-8 shrink-0 px-3 text-xs"
-                      onClick={() => handleUndoPaid(transfer.id)}
-                      disabled={isPending}
-                    >
-                      Undo
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="h-8 shrink-0 px-3 text-xs"
-                      onClick={() => handleMarkPaid(transfer.id)}
-                      disabled={isPending}
-                    >
+                <div className="flex shrink-0 items-center gap-0.5">
+                  {recipient ? (
+                    <PaymentMethodSheet
+                      slug={table.slug}
+                      player={recipient}
+                      onSaved={() => mutate()}
+                    />
+                  ) : null}
+                  {canEdit ? (
+                    isPaid ? (
+                      <>
+                        <span className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-emerald-500 px-3 text-xs font-medium text-emerald-950">
+                          <Check className="size-3.5" />
+                          Paid
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 shrink-0 px-3 text-xs"
+                          onClick={() => handleUndoPaid(transfer.id)}
+                          disabled={isPending}
+                        >
+                          Undo
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        className="h-8 shrink-0 rounded-full px-3 text-xs font-medium"
+                        onClick={() => handleMarkPaid(transfer.id)}
+                        disabled={isPending}
+                      >
+                        Not paid yet
+                      </Button>
+                    )
+                  ) : isPaid ? (
+                    <span className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-emerald-500 px-3 text-xs font-medium text-emerald-950">
                       <Check className="size-3.5" />
                       Paid
-                    </Button>
-                  )
-                ) : isPaid ? (
-                  <span className="shrink-0 text-xs text-muted-foreground">Paid</span>
-                ) : (
-                  <span className="shrink-0 text-xs text-muted-foreground">Pending</span>
-                )}
+                    </span>
+                  ) : (
+                    <span className="inline-flex h-8 shrink-0 items-center rounded-full bg-destructive px-3 text-xs font-medium text-white">
+                      Not paid yet
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })}

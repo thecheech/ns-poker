@@ -1,4 +1,9 @@
-import type { PaymentType } from "./types";
+import type {
+  CashCurrency,
+  CryptoChain,
+  CryptoToken,
+  PaymentType,
+} from "./types";
 
 export const DEFAULT_CHIPS_PER_USD = 100;
 export const STANDARD_BUY_IN_CHIPS = 5000;
@@ -14,19 +19,48 @@ export const PAYMENT_TYPES: PaymentType[] = [
   "CASH",
 ];
 
+export const CRYPTO_CHAINS: CryptoChain[] = [
+  "POLYGON",
+  "SOLANA",
+  "BASE",
+  "OTHER",
+];
+
+export const CRYPTO_TOKENS: CryptoToken[] = ["USDC", "USDT"];
+
+export const CASH_CURRENCIES: CashCurrency[] = ["USD", "SGD", "MYR"];
+
 export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
-  CRYPTO: "USDC (Polygon)",
+  CRYPTO: "Crypto",
   PAYPAL: "PayPal",
   WISE: "Wise",
   REVOLUT: "Revolut",
   CASH: "Cash",
 };
 
+export const CRYPTO_CHAIN_LABELS: Record<CryptoChain, string> = {
+  POLYGON: "Polygon",
+  SOLANA: "Solana",
+  BASE: "Base",
+  OTHER: "Other",
+};
+
+export const CRYPTO_TOKEN_LABELS: Record<CryptoToken, string> = {
+  USDC: "USDC",
+  USDT: "USDT",
+};
+
+export const CASH_CURRENCY_LABELS: Record<CashCurrency, string> = {
+  USD: "USD",
+  SGD: "SGD",
+  MYR: "MYR",
+};
+
 export const PAYMENT_TYPE_HINTS: Record<PaymentType, string> = {
-  CRYPTO: "Wallet address (0x…)",
+  CRYPTO: "Wallet address",
   PAYPAL: "PayPal.me handle or email",
-  WISE: "Wise email or link",
-  REVOLUT: "Revolut @username or link",
+  WISE: "Wise email or @username",
+  REVOLUT: "Revolut @username",
   CASH: "Settle in cash at the table",
 };
 

@@ -2,29 +2,34 @@ import { PAYMENT_TYPE_LABELS } from "./constants";
 import type { PaymentMethod, PaymentType, Player, TableState, Transfer } from "./types";
 
 export function createEmptyPaymentMethod(type: PaymentType = "CRYPTO"): PaymentMethod {
-  return { type, value: null };
+  return {
+    type,
+    value: null,
+    chain: null,
+    token: null,
+    currency: null,
+    link: null,
+  };
 }
 
 export function defaultPaymentMethods(): PaymentMethod[] {
-  return [{ type: "CASH", value: null }];
+  return [{ type: "CASH", value: null, currency: null, link: null }];
 }
 
 export function normalizePaymentMethods(methods: PaymentMethod[]): PaymentMethod[] {
   return methods.map((method) => ({
     type: method.type,
     value: method.type === "CASH" ? null : method.value?.trim() || null,
+    chain: method.type === "CRYPTO" ? method.chain ?? null : null,
+    token: method.type === "CRYPTO" ? method.token ?? null : null,
+    currency: method.type === "CASH" ? method.currency ?? null : null,
+    link: method.link?.trim() || null,
   }));
 }
 
 export function validatePaymentMethods(methods: PaymentMethod[]): string | null {
   if (methods.length === 0) {
-    return "Add at least one way to pay or get paid";
-  }
-
-  for (const method of methods) {
-    if (method.type !== "CASH" && !method.value?.trim()) {
-      return `Enter details for ${PAYMENT_TYPE_LABELS[method.type]}`;
-    }
+    return "Add at least one payment method";
   }
 
   const types = methods.map((method) => method.type);
@@ -33,6 +38,16 @@ export function validatePaymentMethods(methods: PaymentMethod[]): string | null 
   }
 
   return null;
+}
+
+export function paymentMethodHasDetails(method: PaymentMethod): boolean {
+  if (method.type === "CRYPTO") {
+    return Boolean(method.value || method.chain || method.token || method.link);
+  }
+  if (method.type === "CASH") {
+    return Boolean(method.currency);
+  }
+  return Boolean(method.value || method.link);
 }
 
 type LegacyPlayer = Player & {
@@ -64,7 +79,7 @@ export function normalizePlayerPaymentMethods(player: LegacyPlayer): Player {
 
   return {
     ...player,
-    paymentMethods: [createEmptyPaymentMethod()],
+    paymentMethods: defaultPaymentMethods(),
   };
 }
 
@@ -87,7 +102,7 @@ export function normalizeTransferPaymentMethods(transfer: LegacyTransfer): Trans
 
   return {
     ...transfer,
-    paymentMethods: [createEmptyPaymentMethod("CASH")],
+    paymentMethods: defaultPaymentMethods(),
   };
 }
 
@@ -99,4 +114,10 @@ export function normalizeTable(table: TableState): TableState {
       normalizeTransferPaymentMethods(transfer),
     ),
   };
+}
+
+export function formatPaymentMethodsAuditSummary(methods: PaymentMethod[]): string {
+  return methods
+    .map((method) => PAYMENT_TYPE_LABELS[method.type])
+    .join(", ");
 }

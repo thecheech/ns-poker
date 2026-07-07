@@ -1,5 +1,11 @@
 import type { PaymentMethod, PaymentType } from "./types";
-import { PAYMENT_TYPE_LABELS } from "./constants";
+import {
+  CASH_CURRENCY_LABELS,
+  CRYPTO_CHAIN_LABELS,
+  CRYPTO_TOKEN_LABELS,
+  PAYMENT_TYPE_LABELS,
+} from "./constants";
+import { paymentMethodHasDetails } from "./payments";
 
 export function chipsToUsd(chips: number, chipsPerUsd: number): number {
   return chips / chipsPerUsd;
@@ -43,22 +49,56 @@ export function formatDefaultTableName(isoDate: string): string {
   return `${weekday} Night (${monthDay})`;
 }
 
-export function formatPaymentMethod(
-  type: PaymentType,
-  value: string | null,
-): string {
-  if (type === "CASH") return "Cash";
-  const label = PAYMENT_TYPE_LABELS[type];
-  return value ? `${label}: ${value}` : label;
+export function formatPaymentMethod(method: PaymentMethod): string {
+  if (method.type === "CASH") {
+    return method.currency
+      ? `Cash (${CASH_CURRENCY_LABELS[method.currency]})`
+      : "Cash";
+  }
+
+  const parts = [PAYMENT_TYPE_LABELS[method.type]];
+
+  if (method.type === "CRYPTO") {
+    const cryptoParts = [
+      method.token ? CRYPTO_TOKEN_LABELS[method.token] : null,
+      method.chain ? CRYPTO_CHAIN_LABELS[method.chain] : null,
+      method.value,
+    ].filter(Boolean);
+    if (cryptoParts.length) parts.push(cryptoParts.join(" · "));
+  } else if (method.value) {
+    parts.push(method.value);
+  }
+
+  if (method.link) {
+    parts.push(method.link);
+  }
+
+  return parts.join(" · ");
+}
+
+export function formatPaymentMethodShort(method: PaymentMethod): string | null {
+  if (!paymentMethodHasDetails(method)) return null;
+  return formatPaymentMethod(method);
 }
 
 export function formatPaymentMethods(methods: PaymentMethod[]): string {
   return methods
-    .map(
-      (method, index) =>
-        `${index + 1}. ${formatPaymentMethod(method.type, method.value)}`,
-    )
+    .map((method, index) => `${index + 1}. ${formatPaymentMethod(method)}`)
     .join(" · ");
+}
+
+export function formatPaymentMethodsCopyText(
+  recipientName: string,
+  amountUsd: number,
+  methods: PaymentMethod[],
+): string {
+  const lines = [
+    `Pay ${recipientName} ${formatUsd(amountUsd)}`,
+    ...methods.map(
+      (method, index) => `${index + 1}. ${formatPaymentMethod(method)}`,
+    ),
+  ];
+  return lines.join("\n");
 }
 
 export function totalBuyInChips(buyIns: { chips: number }[]): number {

@@ -6,7 +6,12 @@ import { recordAuditEvent } from "@/lib/audit";
 import { requireAuth } from "@/lib/auth";
 import { STANDARD_BUY_IN_CHIPS } from "@/lib/constants";
 import { formatChips, formatDate, formatUsd } from "@/lib/format";
-import { defaultPaymentMethods, normalizePaymentMethods } from "@/lib/payments";
+import {
+  defaultPaymentMethods,
+  formatPaymentMethodsAuditSummary,
+  normalizePaymentMethods,
+  validatePaymentMethods,
+} from "@/lib/payments";
 import { computeTransfers } from "@/lib/settlement";
 import { createTable, deleteTable, getTable, updateTable } from "@/lib/store";
 import type { PaymentMethod, TableState } from "@/lib/types";
@@ -183,6 +188,64 @@ export async function updatePlayerAction(input: {
     summary: "Renamed player",
     before: existing.name,
     after: nextName,
+    target: existing.name,
+  });
+
+  revalidateTable(input.slug);
+}
+
+export async function updatePlayerPaymentMethodsAction(input: {
+  slug: string;
+  playerId: string;
+  paymentMethods: PaymentMethod[];
+}): Promise<void> {
+  const actor = await requireAuth();
+  const table = await getTable(input.slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  const existing = table.players.find((player) => player.id === input.playerId);
+  if (!existing) {
+    throw new Error("Player not found");
+  }
+
+  const paymentMethods = normalizePaymentMethods(input.paymentMethods);
+  const validationError = validatePaymentMethods(paymentMethods);
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  await updateTable(input.slug, (current) => {
+    if (current.status === "OPEN") {
+      throw new Error("Set payment methods after closing the table");
+    }
+
+    const players = current.players.map((player) =>
+      player.id === input.playerId ? { ...player, paymentMethods } : player,
+    );
+
+    const transfers = current.transfers.map((transfer) =>
+      transfer.toPlayerId === input.playerId
+        ? { ...transfer, paymentMethods }
+        : transfer,
+    );
+
+    return {
+      ...current,
+      players,
+      transfers,
+    };
+  });
+
+  await recordAuditEvent({
+    action: "table.settings_updated",
+    actor,
+    tableSlug: input.slug,
+    tableName: table.name,
+    summary: "Updated payment methods",
+    before: formatPaymentMethodsAuditSummary(existing.paymentMethods),
+    after: formatPaymentMethodsAuditSummary(paymentMethods),
     target: existing.name,
   });
 

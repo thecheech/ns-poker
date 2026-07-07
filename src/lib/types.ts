@@ -1,9 +1,16 @@
 export type PaymentType = "CRYPTO" | "PAYPAL" | "WISE" | "REVOLUT" | "CASH";
+export type CryptoChain = "POLYGON" | "SOLANA" | "BASE" | "OTHER";
+export type CryptoToken = "USDC" | "USDT";
+export type CashCurrency = "USD" | "SGD" | "MYR";
 export type TableStatus = "OPEN" | "CASHING_OUT" | "SETTLED";
 
 export interface PaymentMethod {
   type: PaymentType;
   value: string | null;
+  chain?: CryptoChain | null;
+  token?: CryptoToken | null;
+  currency?: CashCurrency | null;
+  link?: string | null;
 }
 
 export interface BuyIn {
