@@ -67,13 +67,20 @@ export function formatPaymentMethod(method: PaymentMethod): string {
     if (cryptoParts.length) parts.push(cryptoParts.join(" · "));
   } else if (method.value) {
     parts.push(method.value);
-  }
-
-  if (method.link) {
+    if (method.link) {
+      parts.push(method.link);
+    }
+  } else if (method.link) {
     parts.push(method.link);
   }
 
   return parts.join(" · ");
+}
+
+export function paymentMethodCopyValue(method: PaymentMethod | null): string | null {
+  if (!method || method.type === "CASH") return null;
+  const value = method.value?.trim();
+  return value || null;
 }
 
 export function formatPaymentMethodShort(method: PaymentMethod): string | null {
@@ -91,11 +98,7 @@ export function formatPaymentMethodCopyText(
   amountUsd: number,
   method: PaymentMethod | null,
 ): string {
-  const lines = [`Pay ${recipientName} ${formatUsd(amountUsd)}`];
-  if (method) {
-    lines.push(formatPaymentMethod(method));
-  }
-  return lines.join("\n");
+  return paymentMethodCopyValue(method) ?? "";
 }
 
 export function formatPaymentMethodsCopyText(

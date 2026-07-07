@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { formatPaymentMethod, formatPaymentMethodCopyText } from "@/lib/format";
+import { formatPaymentMethod, paymentMethodCopyValue } from "@/lib/format";
 import { paymentMethodHasDetails } from "@/lib/payments";
 import type { PaymentMethod } from "@/lib/types";
 
@@ -16,18 +16,17 @@ interface PaymentMethodDisplayProps {
 }
 
 export function PaymentMethodDisplay({
-  recipientName,
-  amountUsd,
   method,
   compact = false,
 }: PaymentMethodDisplayProps) {
   const [copied, setCopied] = useState(false);
+  const copyValue = paymentMethodCopyValue(method);
 
   async function handleCopy() {
-    const text = formatPaymentMethodCopyText(recipientName, amountUsd, method);
-    await navigator.clipboard.writeText(text);
+    if (!copyValue) return;
+    await navigator.clipboard.writeText(copyValue);
     setCopied(true);
-    toast.success("Payment details copied");
+    toast.success("Address copied");
     setTimeout(() => setCopied(false), 2000);
   }
 
@@ -43,16 +42,18 @@ export function PaymentMethodDisplay({
         <p className="min-w-0 truncate text-xs text-muted-foreground">
           {formatPaymentMethod(method)}
         </p>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          className="shrink-0 text-muted-foreground hover:text-foreground"
-          aria-label="Copy payment details"
-          onClick={handleCopy}
-        >
-          {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
-        </Button>
+        {copyValue ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+            aria-label="Copy address"
+            onClick={handleCopy}
+          >
+            {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
+          </Button>
+        ) : null}
       </div>
     );
   }
@@ -62,16 +63,18 @@ export function PaymentMethodDisplay({
       <p className="text-xs leading-relaxed break-words text-muted-foreground">
         {formatPaymentMethod(method)}
       </p>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="h-9 w-full text-xs sm:w-auto"
-        onClick={handleCopy}
-      >
-        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-        {copied ? "Copied" : "Copy payment details"}
-      </Button>
+      {copyValue ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-9 w-full text-xs sm:w-auto"
+          onClick={handleCopy}
+        >
+          {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+          {copied ? "Copied" : "Copy address"}
+        </Button>
+      ) : null}
     </div>
   );
 }

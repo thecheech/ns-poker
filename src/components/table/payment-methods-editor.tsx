@@ -289,7 +289,7 @@ export function PaymentMethodEditor({
         </div>
       ) : null}
 
-      {method.type !== "CASH" ? (
+      {method.type !== "CASH" && method.type !== "CRYPTO" ? (
         <TextInputWithPaste
           id={`${idPrefix}-link`}
           label="Payment link"

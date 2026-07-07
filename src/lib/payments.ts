@@ -31,13 +31,13 @@ function normalizePaymentMethod(method: PaymentMethod): PaymentMethod {
     chain: method.type === "CRYPTO" ? method.chain ?? null : null,
     token: method.type === "CRYPTO" ? method.token ?? null : null,
     currency: method.type === "CASH" ? method.currency ?? null : null,
-    link: method.link?.trim() || null,
+    link: method.type === "CRYPTO" ? null : method.link?.trim() || null,
   };
 }
 
 export function paymentMethodHasDetails(method: PaymentMethod): boolean {
   if (method.type === "CRYPTO") {
-    return Boolean(method.value || method.chain || method.token || method.link);
+    return Boolean(method.value || method.chain || method.token);
   }
   if (method.type === "CASH") {
     return Boolean(method.currency);
