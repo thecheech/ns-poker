@@ -45,9 +45,10 @@ export function NsLogo({
       <div className="min-w-0">
         <p
           className={cn(
-            "truncate font-semibold tracking-tight",
+            "glitch-text glitch-title truncate font-semibold tracking-tight",
             size === "sm" ? "text-base" : "text-lg",
           )}
+          data-text="NS Poker"
         >
           NS Poker
         </p>

@@ -31,7 +31,7 @@ export function CreateTableButton() {
   return (
     <Button
       type="button"
-      className="h-14 w-full text-base font-semibold"
+      className="glitch-button h-14 w-full text-base font-semibold shadow-[0_0_24px_oklch(0.72_0.17_155_/_18%)]"
       onClick={handleCreate}
       disabled={isPending}
     >

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppFooter } from "@/components/branding/footer";
+import { GlitchBackdrop } from "@/components/branding/glitch-backdrop";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -41,8 +42,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex h-dvh flex-col overflow-hidden bg-background">
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+      <body className="relative flex h-dvh flex-col overflow-hidden bg-background">
+        <GlitchBackdrop />
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
           {children}
         </div>
         <AppFooter />

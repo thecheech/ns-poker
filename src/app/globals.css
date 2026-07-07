@@ -98,3 +98,229 @@
     @apply font-sans;
   }
 }
+
+@keyframes glitch-shift {
+  0%,
+  100% {
+    clip-path: inset(0 0 100% 0);
+    transform: translate(0);
+  }
+  10% {
+    clip-path: inset(12% 0 58% 0);
+    transform: translate(-2px, 1px);
+  }
+  20% {
+    clip-path: inset(48% 0 18% 0);
+    transform: translate(2px, -1px);
+  }
+  30% {
+    clip-path: inset(6% 0 72% 0);
+    transform: translate(-1px, 0);
+  }
+  40% {
+    clip-path: inset(62% 0 8% 0);
+    transform: translate(1px, 1px);
+  }
+  50% {
+    clip-path: inset(28% 0 44% 0);
+    transform: translate(-2px, -1px);
+  }
+  60% {
+    clip-path: inset(78% 0 4% 0);
+    transform: translate(2px, 0);
+  }
+  70% {
+    clip-path: inset(0 0 100% 0);
+    transform: translate(0);
+  }
+}
+
+@keyframes glitch-title {
+  0%,
+  92%,
+  100% {
+    text-shadow: none;
+    transform: translate(0);
+  }
+  93% {
+    text-shadow:
+      -2px 0 oklch(0.72 0.17 155 / 70%),
+      2px 0 oklch(0.65 0.2 25 / 45%);
+    transform: translate(-1px, 0);
+  }
+  94% {
+    text-shadow:
+      2px 0 oklch(0.72 0.17 155 / 70%),
+      -2px 0 oklch(0.65 0.2 25 / 45%);
+    transform: translate(1px, 0);
+  }
+  95% {
+    text-shadow: none;
+    transform: translate(0);
+  }
+}
+
+@keyframes glitch-glow-drift {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    opacity: 0.85;
+    transform: translate3d(12px, -8px, 0) scale(1.05);
+  }
+  66% {
+    opacity: 0.45;
+    transform: translate3d(-8px, 10px, 0) scale(0.96);
+  }
+}
+
+@keyframes glitch-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes scanline-scroll {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 100%;
+  }
+}
+
+@keyframes noise-flicker {
+  0%,
+  100% {
+    opacity: 0.03;
+  }
+  50% {
+    opacity: 0.06;
+  }
+}
+
+@layer components {
+  .glitch-text {
+    position: relative;
+    display: inline-block;
+  }
+
+  .glitch-text::before,
+  .glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .glitch-text::before {
+    color: oklch(0.72 0.17 155);
+    animation: glitch-shift 4.5s infinite linear;
+  }
+
+  .glitch-text::after {
+    color: oklch(0.65 0.2 25 / 80%);
+    animation: glitch-shift 4.5s infinite linear reverse;
+    animation-delay: 0.15s;
+  }
+
+  .glitch-text:hover::before,
+  .glitch-text:hover::after {
+    opacity: 0.75;
+  }
+
+  .glitch-title {
+    animation: glitch-title 7s infinite steps(1, end);
+  }
+
+  .glitch-noise {
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: noise-flicker 6s infinite ease-in-out;
+  }
+
+  .glitch-scanlines {
+    opacity: 0.035;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      oklch(1 0 0 / 4%) 2px,
+      oklch(1 0 0 / 4%) 4px
+    );
+    animation: scanline-scroll 12s linear infinite;
+  }
+
+  .glitch-grid {
+    opacity: 0.025;
+    background-image:
+      linear-gradient(oklch(0.72 0.17 155 / 18%) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.72 0.17 155 / 18%) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(circle at 50% 20%, black, transparent 72%);
+  }
+
+  .glitch-glow-a {
+    animation: glitch-glow-drift 14s ease-in-out infinite;
+  }
+
+  .glitch-glow-b {
+    animation: glitch-glow-pulse 9s ease-in-out infinite;
+  }
+
+  .glitch-button {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .glitch-button::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 42%,
+      oklch(1 0 0 / 18%) 48%,
+      transparent 54%
+    );
+    transform: translateX(-130%);
+    transition: transform 0.45s ease;
+    pointer-events: none;
+  }
+
+  .glitch-button:hover::after {
+    transform: translateX(130%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glitch-text::before,
+  .glitch-text::after,
+  .glitch-title,
+  .glitch-noise,
+  .glitch-scanlines,
+  .glitch-glow-a,
+  .glitch-glow-b {
+    animation: none !important;
+  }
+
+  .glitch-text::before,
+  .glitch-text::after {
+    opacity: 0 !important;
+  }
+
+  .glitch-button::after {
+    display: none;
+  }
+}
