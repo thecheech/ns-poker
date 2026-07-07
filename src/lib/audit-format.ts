@@ -15,7 +15,7 @@ const actionLabels: Record<AuditAction, string> = {
   "buy_in.deleted": "Buy-in removed",
   "cash_out.set": "Cash-out set",
   "transfer.marked_paid": "Transfer paid",
-  "transfer.unmarked_paid": "Transfer unpaid",
+  "transfer.unmarked_paid": "Transfer pending",
 };
 
 export function formatAuditAction(action: AuditAction): string {

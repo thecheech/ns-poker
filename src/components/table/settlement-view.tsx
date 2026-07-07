@@ -297,7 +297,7 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
                         onClick={() => handleMarkPaid(transfer.id)}
                         disabled={isPending}
                       >
-                        Unpaid
+                        Pending
                       </Button>
                     )
                   ) : isPaid ? (
@@ -307,7 +307,7 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
                     </span>
                   ) : (
                     <span className="inline-flex h-7 shrink-0 items-center rounded-full bg-destructive px-2.5 text-xs font-medium text-white">
-                      Unpaid
+                      Pending
                     </span>
                   )}
                 </div>

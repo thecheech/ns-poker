@@ -48,7 +48,7 @@ function SettlementLine({ table }: { table: RecentTableSummary }) {
         />
       </div>
       <p className="text-xs text-muted-foreground">
-        {formatUsd(table.settledUsd)} settled · {formatUsd(table.unsettledUsd)} unpaid ·{" "}
+        {formatUsd(table.settledUsd)} settled · {formatUsd(table.unsettledUsd)} pending ·{" "}
         {table.settledPercent}%
       </p>
     </div>
