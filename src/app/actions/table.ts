@@ -502,7 +502,6 @@ export async function reopenTableAction(slug: string): Promise<void> {
     ...current,
     status: "OPEN",
     transfers: [],
-    players: current.players.map((player) => ({ ...player, cashOut: null })),
   }));
 
   await recordAuditEvent({
