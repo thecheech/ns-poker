@@ -47,7 +47,9 @@ export default function RootLayout({
         <AuthSessionProvider>
           <GlitchBackdrop />
           <div className="relative z-10 flex min-h-dvh flex-col">
-            {children}
+            <div className="flex flex-1 flex-col pb-[calc(3.25rem+env(safe-area-inset-bottom))]">
+              {children}
+            </div>
             <AppFooter />
           </div>
         </AuthSessionProvider>

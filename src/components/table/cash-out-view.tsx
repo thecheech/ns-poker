@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import useSWR from "swr";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   reopenTableAction,
@@ -18,7 +18,113 @@ import { Input } from "@/components/ui/input";
 import { formatBuyInSummary, formatChips } from "@/lib/format";
 import { validateChipBalance } from "@/lib/settlement";
 import { cn } from "@/lib/utils";
-import type { TableState } from "@/lib/types";
+import type { Player, TableState } from "@/lib/types";
+
+function savedChips(player: Player): number | null {
+  return player.cashOut?.chips ?? null;
+}
+
+function chipsToDraft(chips: number | null): string {
+  return chips === null ? "" : String(chips);
+}
+
+function parseDraft(draft: string): number | null {
+  if (draft.trim() === "") return null;
+  const chips = Number(draft);
+  if (!Number.isFinite(chips) || chips < 0) return null;
+  return chips;
+}
+
+interface CashOutPlayerRowProps {
+  player: Player;
+  canEdit: boolean;
+  isPending: boolean;
+  onSave: (playerId: string, chips: number) => void;
+}
+
+function CashOutPlayerRow({ player, canEdit, isPending, onSave }: CashOutPlayerRowProps) {
+  const saved = savedChips(player);
+  const [draft, setDraft] = useState(() => chipsToDraft(saved));
+
+  useEffect(() => {
+    setDraft(chipsToDraft(savedChips(player)));
+  }, [player.cashOut?.chips]);
+
+  const parsed = parseDraft(draft);
+  const isValid = draft.trim() === "" || parsed !== null;
+  const isDirty = draft.trim() === "" ? saved !== null : parsed !== saved;
+
+  function handleConfirm() {
+    const chips = draft.trim() === "" ? 0 : parsed;
+    if (chips === null) return;
+    onSave(player.id, chips);
+  }
+
+  function handleDiscard() {
+    setDraft(chipsToDraft(saved));
+  }
+
+  return (
+    <div data-player-row className="flex items-center gap-3 px-3 py-2.5">
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium">{player.name}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {formatBuyInSummary(player.buyIns)}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        {canEdit && isDirty ? (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              className="text-muted-foreground hover:text-primary"
+              aria-label={`Save chips for ${player.name}`}
+              disabled={isPending || !isValid}
+              onClick={handleConfirm}
+            >
+              <Check />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              className="text-muted-foreground hover:text-destructive"
+              aria-label={`Discard changes for ${player.name}`}
+              disabled={isPending}
+              onClick={handleDiscard}
+            >
+              <X />
+            </Button>
+          </>
+        ) : null}
+        <Input
+          id={`cashout-${player.id}`}
+          inputMode="numeric"
+          value={draft}
+          placeholder="0"
+          readOnly={!canEdit}
+          aria-label={`Final chips for ${player.name}`}
+          aria-invalid={!isValid}
+          className="h-9 w-[4.5rem] shrink-0 px-2 text-center text-sm tabular-nums"
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (!canEdit || !isDirty) return;
+            if (event.key === "Enter") {
+              event.preventDefault();
+              handleConfirm();
+            }
+            if (event.key === "Escape") {
+              event.preventDefault();
+              handleDiscard();
+            }
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
 interface CashOutViewProps {
   initialTable: TableState;
@@ -133,30 +239,13 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
 
       <div className="divide-y divide-border/60 overflow-hidden rounded-xl border bg-card">
         {table.players.map((player) => (
-          <div key={player.id} data-player-row className="flex items-center gap-3 px-3 py-2.5">
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{player.name}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {formatBuyInSummary(player.buyIns)}
-              </p>
-            </div>
-            <Input
-              id={`cashout-${player.id}`}
-              inputMode="numeric"
-              defaultValue={player.cashOut?.chips ?? ""}
-              placeholder="0"
-              readOnly={!canEdit}
-              aria-label={`Final chips for ${player.name}`}
-              className="h-9 w-[4.5rem] shrink-0 px-2 text-center text-sm tabular-nums"
-              onBlur={(event) => {
-                if (!canEdit) return;
-                const chips = Number(event.target.value);
-                if (!Number.isFinite(chips) || chips < 0) return;
-                if (player.cashOut?.chips === chips) return;
-                handleCashOut(player.id, chips);
-              }}
-            />
-          </div>
+          <CashOutPlayerRow
+            key={player.id}
+            player={player}
+            canEdit={canEdit}
+            isPending={isPending}
+            onSave={handleCashOut}
+          />
         ))}
       </div>
 
