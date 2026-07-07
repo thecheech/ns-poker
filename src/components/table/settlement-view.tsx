@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { formatChips, formatUsd } from "@/lib/format";
 import { UNMATCHED_PLAYER_ID } from "@/lib/constants";
 import { validateChipBalance } from "@/lib/settlement";
+import { primaryPaymentMethod } from "@/lib/payments";
 import { cn } from "@/lib/utils";
 import type { TableState } from "@/lib/types";
 
@@ -168,7 +169,7 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
                   <PaymentMethodDisplay
                     recipientName={toName}
                     amountUsd={transfer.amountUsd}
-                    methods={transfer.paymentMethods}
+                    method={primaryPaymentMethod(transfer.paymentMethods)}
                   />
                 ) : null}
                 <div className="flex flex-wrap items-center justify-end gap-1.5">

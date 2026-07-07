@@ -82,9 +82,20 @@ export function formatPaymentMethodShort(method: PaymentMethod): string | null {
 }
 
 export function formatPaymentMethods(methods: PaymentMethod[]): string {
-  return methods
-    .map((method, index) => `${index + 1}. ${formatPaymentMethod(method)}`)
-    .join(" · ");
+  const method = methods[0];
+  return method ? formatPaymentMethod(method) : "None";
+}
+
+export function formatPaymentMethodCopyText(
+  recipientName: string,
+  amountUsd: number,
+  method: PaymentMethod | null,
+): string {
+  const lines = [`Pay ${recipientName} ${formatUsd(amountUsd)}`];
+  if (method) {
+    lines.push(formatPaymentMethod(method));
+  }
+  return lines.join("\n");
 }
 
 export function formatPaymentMethodsCopyText(
@@ -92,13 +103,7 @@ export function formatPaymentMethodsCopyText(
   amountUsd: number,
   methods: PaymentMethod[],
 ): string {
-  const lines = [
-    `Pay ${recipientName} ${formatUsd(amountUsd)}`,
-    ...methods.map(
-      (method, index) => `${index + 1}. ${formatPaymentMethod(method)}`,
-    ),
-  ];
-  return lines.join("\n");
+  return formatPaymentMethodCopyText(recipientName, amountUsd, methods[0] ?? null);
 }
 
 export function totalBuyInChips(buyIns: { chips: number }[]): number {

@@ -92,7 +92,7 @@ export function computeTransfers(
       fromPlayerId: debtor.playerId,
       toPlayerId: creditor.playerId,
       amountUsd,
-      paymentMethods: recipient.paymentMethods,
+      paymentMethods: recipient.paymentMethods.slice(0, 1),
       status: "PENDING",
       paidAt: null,
     });
@@ -113,7 +113,7 @@ export function computeTransfers(
         fromPlayerId: UNMATCHED_PLAYER_ID,
         toPlayerId: creditor.playerId,
         amountUsd: creditor.amountUsd,
-        paymentMethods: recipient?.paymentMethods ?? defaultPaymentMethods(),
+        paymentMethods: recipient?.paymentMethods.slice(0, 1) ?? defaultPaymentMethods(),
         status: "PENDING",
         paidAt: null,
       });

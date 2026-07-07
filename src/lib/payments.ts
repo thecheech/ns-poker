@@ -16,25 +16,37 @@ export function defaultPaymentMethods(): PaymentMethod[] {
   return [createEmptyPaymentMethod("CRYPTO")];
 }
 
-export function normalizePaymentMethods(methods: PaymentMethod[]): PaymentMethod[] {
-  return methods.map((method) => ({
+export function defaultPaymentMethod(): PaymentMethod {
+  return createEmptyPaymentMethod("CRYPTO");
+}
+
+export function primaryPaymentMethod(methods: PaymentMethod[]): PaymentMethod | null {
+  return methods[0] ?? null;
+}
+
+export function toPaymentMethods(method: PaymentMethod | null): PaymentMethod[] {
+  return method ? [method] : [];
+}
+
+function normalizePaymentMethod(method: PaymentMethod): PaymentMethod {
+  return {
     type: method.type,
     value: method.type === "CASH" ? null : method.value?.trim() || null,
     chain: method.type === "CRYPTO" ? method.chain ?? null : null,
     token: method.type === "CRYPTO" ? method.token ?? null : null,
     currency: method.type === "CASH" ? method.currency ?? null : null,
     link: method.link?.trim() || null,
-  }));
+  };
+}
+
+export function normalizePaymentMethods(methods: PaymentMethod[]): PaymentMethod[] {
+  if (methods.length === 0) return [];
+  return [normalizePaymentMethod(methods[0])];
 }
 
 export function validatePaymentMethods(methods: PaymentMethod[]): string | null {
-  if (methods.length === 0) {
-    return "Add at least one payment method";
-  }
-
-  const types = methods.map((method) => method.type);
-  if (new Set(types).size !== types.length) {
-    return "Each payment method can only appear once";
+  if (methods.length > 1) {
+    return "Only one payment method is allowed";
   }
 
   return null;
@@ -117,7 +129,6 @@ export function normalizeTable(table: TableState): TableState {
 }
 
 export function formatPaymentMethodsAuditSummary(methods: PaymentMethod[]): string {
-  return methods
-    .map((method) => PAYMENT_TYPE_LABELS[method.type])
-    .join(", ");
+  const method = primaryPaymentMethod(methods);
+  return method ? PAYMENT_TYPE_LABELS[method.type] : "None";
 }

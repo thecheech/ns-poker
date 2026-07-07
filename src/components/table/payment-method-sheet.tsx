@@ -5,17 +5,21 @@ import { Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { updatePlayerPaymentMethodsAction } from "@/app/actions/table";
 import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
-import { PaymentMethodsEditor } from "@/components/table/payment-methods-editor";
+import { PaymentMethodEditor } from "@/components/table/payment-methods-editor";
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { validatePaymentMethods } from "@/lib/payments";
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  createEmptyPaymentMethod,
+  primaryPaymentMethod,
+  toPaymentMethods,
+  validatePaymentMethods,
+} from "@/lib/payments";
 import type { PaymentMethod, Player } from "@/lib/types";
 
 interface PaymentMethodSheetProps {
@@ -24,15 +28,21 @@ interface PaymentMethodSheetProps {
   onSaved: () => void;
 }
 
+function initialMethod(paymentMethods: PaymentMethod[]): PaymentMethod {
+  return primaryPaymentMethod(paymentMethods) ?? createEmptyPaymentMethod("CRYPTO");
+}
+
 export function PaymentMethodSheet({ slug, player, onSaved }: PaymentMethodSheetProps) {
   const canEdit = useCanEdit();
   const [open, setOpen] = useState(false);
-  const [methods, setMethods] = useState<PaymentMethod[]>(player.paymentMethods);
+  const [method, setMethod] = useState<PaymentMethod | null>(
+    initialMethod(player.paymentMethods),
+  );
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (open) {
-      setMethods(player.paymentMethods);
+      setMethod(initialMethod(player.paymentMethods));
     }
   }, [open, player.paymentMethods]);
 
@@ -45,7 +55,8 @@ export function PaymentMethodSheet({ slug, player, onSaved }: PaymentMethodSheet
   }
 
   function handleSave() {
-    const error = validatePaymentMethods(methods);
+    const paymentMethods = toPaymentMethods(method);
+    const error = validatePaymentMethods(paymentMethods);
     if (error) {
       toast.error(error);
       return;
@@ -56,14 +67,14 @@ export function PaymentMethodSheet({ slug, player, onSaved }: PaymentMethodSheet
         await updatePlayerPaymentMethodsAction({
           slug,
           playerId: player.id,
-          paymentMethods: methods,
+          paymentMethods,
         });
-        toast.success("Payment methods saved");
+        toast.success("Payment method saved");
         setOpen(false);
         onSaved();
       } catch (saveError) {
         toast.error(
-          saveError instanceof Error ? saveError.message : "Could not save payment methods",
+          saveError instanceof Error ? saveError.message : "Could not save payment method",
         );
       }
     });
@@ -76,48 +87,42 @@ export function PaymentMethodSheet({ slug, player, onSaved }: PaymentMethodSheet
         variant="ghost"
         size="icon-sm"
         className="shrink-0 text-muted-foreground hover:text-foreground"
-        aria-label={`Payment methods for ${player.name}`}
-        title="Payment methods"
+        aria-label={`Payment method for ${player.name}`}
+        title="Payment method"
         onClick={handleOpen}
       >
         <Wallet className="size-4" />
       </Button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="bottom"
-          className="max-h-[90dvh] gap-0 overflow-y-auto rounded-t-2xl pb-[env(safe-area-inset-bottom)]"
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent
+          showCloseButton
+          className="fixed inset-x-0 bottom-0 top-auto max-h-[90dvh] max-w-none translate-x-0 translate-y-0 gap-0 overflow-y-auto rounded-t-2xl rounded-b-none p-0 pb-[env(safe-area-inset-bottom)] ring-0 sm:top-1/2 sm:bottom-auto sm:max-h-[min(85vh,640px)] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:pb-0"
         >
-          <SheetHeader className="text-left">
-            <SheetTitle>{player.name}</SheetTitle>
-            <SheetDescription>
-              Add payment methods in priority order — Crypto first, then Cash, then
-              others. Payers try #1 first. All fields are optional.
-            </SheetDescription>
-          </SheetHeader>
+          <DialogHeader className="border-b border-border/60 px-4 py-4 text-left sm:px-6 sm:py-5">
+            <DialogTitle className="text-base sm:text-lg">{player.name}</DialogTitle>
+          </DialogHeader>
 
-          <div className="px-4 pb-4">
-            <PaymentMethodsEditor
-              methods={methods}
-              onChange={setMethods}
+          <div className="px-4 py-4 sm:px-6 sm:py-5">
+            <PaymentMethodEditor
+              method={method}
+              onChange={setMethod}
               idPrefix={`${player.id}-payment`}
-              hideHeader
-              compact
             />
           </div>
 
-          <SheetFooter className="sticky bottom-0 border-t border-border/60 bg-popover pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <DialogFooter className="border-t border-border/60 bg-muted/30 px-4 py-4 sm:px-6 sm:py-4">
             <Button
               type="button"
-              className="h-11 w-full text-base"
+              className="h-11 w-full text-base sm:h-10 sm:w-auto sm:min-w-28"
               onClick={handleSave}
               disabled={isPending}
             >
               Save
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
