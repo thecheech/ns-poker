@@ -2,19 +2,29 @@
 
 import useSWR from "swr";
 import { Check } from "lucide-react";
-import { useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { markTransferPaidAction, undoTransferPaidAction } from "@/app/actions/table";
 import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
 import { PaymentMethodDisplay } from "@/components/table/payment-method-display";
 import { PaymentMethodSheet } from "@/components/table/payment-method-sheet";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatChips, formatUsd } from "@/lib/format";
 import { UNMATCHED_PLAYER_ID } from "@/lib/constants";
 import { validateChipBalance } from "@/lib/settlement";
 import { primaryPaymentMethod } from "@/lib/payments";
 import { cn } from "@/lib/utils";
 import type { TableState } from "@/lib/types";
+
+const ALL_PLAYERS_VALUE = "all";
 
 function transferPartyName(
   playerId: string,
@@ -35,6 +45,7 @@ async function fetchTable(slug: string): Promise<TableState> {
 }
 
 export function SettlementView({ initialTable }: SettlementViewProps) {
+  const [playerFilter, setPlayerFilter] = useState(ALL_PLAYERS_VALUE);
   const [isPending, startTransition] = useTransition();
   const canEdit = useCanEdit();
 
@@ -47,12 +58,47 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
     },
   );
 
+  const playerMap = useMemo(
+    () => new Map((table?.players ?? []).map((player) => [player.id, player])),
+    [table?.players],
+  );
+
+  const filterPlayers = useMemo(() => {
+    if (!table) return [];
+
+    const ids = new Set<string>();
+    for (const transfer of table.transfers) {
+      if (transfer.fromPlayerId !== UNMATCHED_PLAYER_ID) {
+        ids.add(transfer.fromPlayerId);
+      }
+      if (transfer.toPlayerId !== UNMATCHED_PLAYER_ID) {
+        ids.add(transfer.toPlayerId);
+      }
+    }
+
+    return [...ids]
+      .map((id) => ({
+        id,
+        name: playerMap.get(id)?.name ?? "Someone",
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [table, playerMap]);
+
+  const filteredTransfers = useMemo(() => {
+    if (!table) return [];
+    if (playerFilter === ALL_PLAYERS_VALUE) return table.transfers;
+    return table.transfers.filter(
+      (transfer) =>
+        transfer.fromPlayerId === playerFilter ||
+        transfer.toPlayerId === playerFilter,
+    );
+  }, [table, playerFilter]);
+
   if (!table) return null;
 
   const balance = validateChipBalance(table.players);
-  const playerMap = new Map(table.players.map((player) => [player.id, player]));
-  const pendingCount = table.transfers.filter((t) => t.status === "PENDING").length;
-  const allPaid = pendingCount === 0 && table.transfers.length > 0;
+  const pendingCount = filteredTransfers.filter((t) => t.status === "PENDING").length;
+  const allPaid = pendingCount === 0 && filteredTransfers.length > 0;
 
   function handleMarkPaid(transferId: string) {
     if (!canEdit) {
@@ -112,7 +158,7 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 px-4 pb-8 pt-4">
+    <div className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-3 px-4 pb-8 pt-4">
       {!balance.valid ? (
         <p className="rounded-lg border border-amber-400/40 bg-amber-500/15 px-3 py-2 text-sm text-amber-100">
           Chip counts are off by {formatChips(Math.abs(balance.difference))}. Payments
@@ -122,15 +168,40 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
 
       <p className="text-sm text-muted-foreground">
         {table.transfers.length > 0
-          ? allPaid
-            ? "All paid."
-            : `${pendingCount} pending — pay outside the app, then mark paid.`
+          ? filteredTransfers.length > 0
+            ? allPaid
+              ? playerFilter === ALL_PLAYERS_VALUE
+                ? "All paid."
+                : "All filtered payments paid."
+              : `${pendingCount} pending — pay outside the app, then mark paid.`
+            : "No matching payments."
           : "Everyone broke even."}
       </p>
 
-      {table.transfers.length > 0 ? (
+      {table.transfers.length > 0 && filterPlayers.length > 1 ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="settlement-player-filter" className="text-xs text-muted-foreground">
+            Filter by player
+          </Label>
+          <Select value={playerFilter} onValueChange={(value) => setPlayerFilter(value ?? ALL_PLAYERS_VALUE)}>
+            <SelectTrigger id="settlement-player-filter" className="h-9 w-full text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_PLAYERS_VALUE}>All players</SelectItem>
+              {filterPlayers.map((player) => (
+                <SelectItem key={player.id} value={player.id}>
+                  {player.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
+
+      {filteredTransfers.length > 0 ? (
         <div className="divide-y divide-border/60 overflow-hidden rounded-xl border bg-card">
-          {table.transfers.map((transfer) => {
+          {filteredTransfers.map((transfer) => {
             const isPaid = transfer.status === "PAID";
             const fromName = transferPartyName(transfer.fromPlayerId, playerMap);
             const toName = transferPartyName(transfer.toPlayerId, playerMap);
@@ -140,26 +211,27 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
               <div
                 key={transfer.id}
                 className={cn(
-                  "space-y-2.5 px-3 py-3",
+                  "flex items-center gap-2 px-3 py-2",
                   isPaid && "opacity-60",
                 )}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <p className="min-w-0 font-medium leading-snug">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
                     {fromName} → {toName}
                   </p>
-                  <p className="shrink-0 text-sm font-medium text-primary tabular-nums">
-                    {formatUsd(transfer.amountUsd)}
-                  </p>
+                  {transfer.toPlayerId !== UNMATCHED_PLAYER_ID ? (
+                    <PaymentMethodDisplay
+                      compact
+                      recipientName={toName}
+                      amountUsd={transfer.amountUsd}
+                      method={primaryPaymentMethod(transfer.paymentMethods)}
+                    />
+                  ) : null}
                 </div>
-                {transfer.toPlayerId !== UNMATCHED_PLAYER_ID ? (
-                  <PaymentMethodDisplay
-                    recipientName={toName}
-                    amountUsd={transfer.amountUsd}
-                    method={primaryPaymentMethod(transfer.paymentMethods)}
-                  />
-                ) : null}
-                <div className="flex flex-wrap items-center justify-end gap-1.5">
+                <p className="shrink-0 text-sm font-medium text-primary tabular-nums">
+                  {formatUsd(transfer.amountUsd)}
+                </p>
+                <div className="flex shrink-0 items-center gap-1">
                   {recipient ? (
                     <PaymentMethodSheet
                       slug={table.slug}
@@ -170,15 +242,15 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
                   {canEdit ? (
                     isPaid ? (
                       <>
-                        <span className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-emerald-500 px-3 text-xs font-medium text-emerald-950">
-                          <Check className="size-3.5" />
+                        <span className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-emerald-500 px-2.5 text-xs font-medium text-emerald-950">
+                          <Check className="size-3" />
                           Paid
                         </span>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-8 shrink-0 px-3 text-xs"
+                          className="h-7 shrink-0 px-2.5 text-xs"
                           onClick={() => handleUndoPaid(transfer.id)}
                           disabled={isPending}
                         >
@@ -189,21 +261,21 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
                       <Button
                         type="button"
                         size="sm"
-                        className="h-8 shrink-0 rounded-full bg-destructive px-3 text-xs font-medium text-white hover:bg-destructive/90"
+                        className="h-7 shrink-0 rounded-full bg-destructive px-2.5 text-xs font-medium text-white hover:bg-destructive/90"
                         onClick={() => handleMarkPaid(transfer.id)}
                         disabled={isPending}
                       >
-                        Not paid yet
+                        Unpaid
                       </Button>
                     )
                   ) : isPaid ? (
-                    <span className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-emerald-500 px-3 text-xs font-medium text-emerald-950">
-                      <Check className="size-3.5" />
+                    <span className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-emerald-500 px-2.5 text-xs font-medium text-emerald-950">
+                      <Check className="size-3" />
                       Paid
                     </span>
                   ) : (
-                    <span className="inline-flex h-8 shrink-0 items-center rounded-full bg-destructive px-3 text-xs font-medium text-white">
-                      Not paid yet
+                    <span className="inline-flex h-7 shrink-0 items-center rounded-full bg-destructive px-2.5 text-xs font-medium text-white">
+                      Unpaid
                     </span>
                   )}
                 </div>
@@ -211,8 +283,12 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
             );
           })}
         </div>
+      ) : table.transfers.length > 0 ? (
+        <div className="rounded-xl border border-dashed bg-card/50 px-4 py-6 text-center text-sm text-muted-foreground">
+          No payments for this player.
+        </div>
       ) : (
-        <div className="rounded-xl border border-dashed bg-card/50 px-4 py-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed bg-card/50 px-4 py-6 text-center text-sm text-muted-foreground">
           No payments needed.
         </div>
       )}
