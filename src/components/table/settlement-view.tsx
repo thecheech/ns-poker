@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { markTransferPaidAction, undoTransferPaidAction } from "@/app/actions/table";
+import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
 import { TableCallout } from "@/components/table/table-callout";
 import { Button } from "@/components/ui/button";
 import { formatUsd } from "@/lib/format";
@@ -32,6 +33,7 @@ async function fetchTable(slug: string): Promise<TableState> {
 
 export function SettlementView({ initialTable }: SettlementViewProps) {
   const [isPending, startTransition] = useTransition();
+  const canEdit = useCanEdit();
 
   const { data: table, mutate } = useSWR(
     `/api/tables/${initialTable.slug}`,
@@ -74,6 +76,11 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
   const allPaid = pendingCount === 0 && table.transfers.length > 0;
 
   function handleMarkPaid(transferId: string) {
+    if (!canEdit) {
+      promptGoogleSignIn();
+      return;
+    }
+
     startTransition(async () => {
       try {
         await markTransferPaidAction({ slug: table.slug, transferId });
@@ -86,6 +93,11 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
   }
 
   function handleUndoPaid(transferId: string) {
+    if (!canEdit) {
+      promptGoogleSignIn();
+      return;
+    }
+
     startTransition(async () => {
       try {
         await undoTransferPaidAction({ slug: table.slug, transferId });
@@ -128,28 +140,34 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
                   </p>
                   <p className="text-xs text-primary tabular-nums">{formatUsd(transfer.amountUsd)}</p>
                 </div>
-                {isPaid ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 shrink-0 px-3 text-xs"
-                    onClick={() => handleUndoPaid(transfer.id)}
-                    disabled={isPending}
-                  >
-                    Undo
-                  </Button>
+                {canEdit ? (
+                  isPaid ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 shrink-0 px-3 text-xs"
+                      onClick={() => handleUndoPaid(transfer.id)}
+                      disabled={isPending}
+                    >
+                      Undo
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-8 shrink-0 px-3 text-xs"
+                      onClick={() => handleMarkPaid(transfer.id)}
+                      disabled={isPending}
+                    >
+                      <Check className="size-3.5" />
+                      Paid
+                    </Button>
+                  )
+                ) : isPaid ? (
+                  <span className="shrink-0 text-xs text-muted-foreground">Paid</span>
                 ) : (
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="h-8 shrink-0 px-3 text-xs"
-                    onClick={() => handleMarkPaid(transfer.id)}
-                    disabled={isPending}
-                  >
-                    <Check className="size-3.5" />
-                    Paid
-                  </Button>
+                  <span className="shrink-0 text-xs text-muted-foreground">Pending</span>
                 )}
               </div>
             );

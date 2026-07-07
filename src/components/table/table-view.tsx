@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useTransition } from "react";
 import { toast } from "sonner";
 import { reopenTableAction, startCashOutAction } from "@/app/actions/table";
+import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
 import { AddPlayerForm } from "@/components/table/add-player-form";
 import { PlayerRow } from "@/components/table/player-row";
 import { TableCallout } from "@/components/table/table-callout";
@@ -28,6 +29,7 @@ async function fetchTable(slug: string): Promise<TableState> {
 export function TableView({ initialTable }: TableViewProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const canEdit = useCanEdit();
 
   const { data: table, mutate } = useSWR(
     `/api/tables/${initialTable.slug}`,
@@ -59,6 +61,11 @@ export function TableView({ initialTable }: TableViewProps) {
   }
 
   function handleCloseTable() {
+    if (!canEdit) {
+      promptGoogleSignIn();
+      return;
+    }
+
     startTransition(async () => {
       try {
         await startCashOutAction(table.slug);
@@ -70,6 +77,11 @@ export function TableView({ initialTable }: TableViewProps) {
   }
 
   function handleReopenTable() {
+    if (!canEdit) {
+      promptGoogleSignIn();
+      return;
+    }
+
     startTransition(async () => {
       try {
         await reopenTableAction(table.slug);
@@ -81,7 +93,11 @@ export function TableView({ initialTable }: TableViewProps) {
     });
   }
 
+  const isEditable = isOpen && canEdit;
+
   function reopenTableButton() {
+    if (!canEdit) return null;
+
     return (
       <Button
         type="button"
@@ -106,12 +122,12 @@ export function TableView({ initialTable }: TableViewProps) {
                 slug={table.slug}
                 table={table}
                 player={player}
-                editable={isOpen}
+                editable={isEditable}
                 onChange={() => mutate()}
               />
             ))}
           </div>
-          {isOpen ? (
+          {isEditable ? (
             <div className="border-t border-dashed border-border/60 px-3 py-2.5">
               <AddPlayerForm slug={table.slug} onAdded={handlePlayerAdded} />
             </div>
@@ -120,9 +136,11 @@ export function TableView({ initialTable }: TableViewProps) {
       ) : isOpen ? (
         <div className="overflow-hidden rounded-xl border border-dashed bg-card/50 px-4 py-8 text-center">
           <p className="text-sm text-muted-foreground">No players yet.</p>
-          <div className="mt-3">
-            <AddPlayerForm slug={table.slug} onAdded={handlePlayerAdded} />
-          </div>
+          {isEditable ? (
+            <div className="mt-3">
+              <AddPlayerForm slug={table.slug} onAdded={handlePlayerAdded} />
+            </div>
+          ) : null}
         </div>
       ) : (
         <TableCallout
@@ -133,7 +151,7 @@ export function TableView({ initialTable }: TableViewProps) {
         />
       )}
 
-      {isOpen && table.players.length > 0 ? (
+      {isOpen && table.players.length > 0 && canEdit ? (
         <Button
           type="button"
           variant="secondary"

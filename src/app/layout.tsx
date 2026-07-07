@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AuthSessionProvider } from "@/components/auth/session-provider";
 import { AppFooter } from "@/components/branding/footer";
 import { GlitchBackdrop } from "@/components/branding/glitch-backdrop";
 import { Toaster } from "@/components/ui/sonner";
@@ -43,11 +44,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="relative flex h-dvh flex-col overflow-hidden bg-background">
-        <GlitchBackdrop />
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
-          {children}
-        </div>
-        <AppFooter />
+        <AuthSessionProvider>
+          <GlitchBackdrop />
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+            {children}
+          </div>
+          <AppFooter />
+        </AuthSessionProvider>
         <Toaster richColors position="top-center" />
       </body>
     </html>

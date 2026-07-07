@@ -5,14 +5,21 @@ import { Plus } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { createTableAction } from "@/app/actions/table";
+import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
 import { Button } from "@/components/ui/button";
 import { addRecentTable } from "@/lib/recent-tables";
 
 export function CreateTableButton() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const canEdit = useCanEdit();
 
   function handleCreate() {
+    if (!canEdit) {
+      promptGoogleSignIn();
+      return;
+    }
+
     startTransition(async () => {
       try {
         const { slug, name } = await createTableAction();

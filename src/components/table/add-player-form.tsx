@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { addPlayerAction } from "@/app/actions/table";
+import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -15,9 +16,15 @@ export function AddPlayerForm({ slug, onAdded }: AddPlayerFormProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [isPending, startTransition] = useTransition();
+  const canEdit = useCanEdit();
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+
+    if (!canEdit) {
+      promptGoogleSignIn();
+      return;
+    }
 
     if (!name.trim()) {
       toast.error("Enter a name");
@@ -35,6 +42,10 @@ export function AddPlayerForm({ slug, onAdded }: AddPlayerFormProps) {
         toast.error(error instanceof Error ? error.message : "Could not add player");
       }
     });
+  }
+
+  if (!canEdit) {
+    return null;
   }
 
   if (!open) {

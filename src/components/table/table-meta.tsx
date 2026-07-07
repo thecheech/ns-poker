@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { updateTableSettingsAction } from "@/app/actions/table";
+import { useCanEdit } from "@/components/auth/auth-button";
 import { DeleteTableButton } from "@/components/delete-table-button";
 import { CopyTableLinkButton } from "@/components/share-link-button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ export function TableMeta({ initialTable }: TableMetaProps) {
   const [editName, setEditName] = useState("");
   const [editDate, setEditDate] = useState("");
   const [isPending, startTransition] = useTransition();
+  const canEdit = useCanEdit();
 
   const { data: table, mutate } = useSWR(
     `/api/tables/${initialTable.slug}`,
@@ -104,12 +106,14 @@ export function TableMeta({ initialTable }: TableMetaProps) {
             <h1 className="min-w-0 text-lg font-bold leading-snug tracking-tight">
               {table.name ?? "Poker table"}
             </h1>
-            <DeleteTableButton
-              slug={table.slug}
-              tableName={table.name}
-              redirectTo="/"
-            />
-            {isPlayersTab ? (
+            {canEdit ? (
+              <DeleteTableButton
+                slug={table.slug}
+                tableName={table.name}
+                redirectTo="/"
+              />
+            ) : null}
+            {isPlayersTab && canEdit ? (
               <Button
                 type="button"
                 variant="ghost"

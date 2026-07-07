@@ -6,6 +6,7 @@ import { STANDARD_BUY_IN_CHIPS } from "@/lib/constants";
 import { computeTransfers } from "@/lib/settlement";
 import { createTable, deleteTable, getTable, updateTable } from "@/lib/store";
 import type { PaymentMethod, TableState } from "@/lib/types";
+import { requireAuth } from "@/lib/auth";
 import { normalizePaymentMethods, defaultPaymentMethods } from "@/lib/payments";
 
 function revalidateTable(slug: string) {
@@ -15,6 +16,7 @@ function revalidateTable(slug: string) {
 }
 
 export async function createTableAction(): Promise<{ slug: string; name: string }> {
+  await requireAuth();
   const table = await createTable();
   return { slug: table.slug, name: table.name ?? table.slug };
 }
@@ -24,6 +26,7 @@ export async function getTableAction(slug: string): Promise<TableState | null> {
 }
 
 export async function deleteTableAction(slug: string): Promise<void> {
+  await requireAuth();
   const table = await getTable(slug);
   if (!table) {
     throw new Error("Table not found");
@@ -39,6 +42,7 @@ export async function addPlayerAction(input: {
   name: string;
   paymentMethods?: PaymentMethod[];
 }): Promise<{ playerId: string }> {
+  await requireAuth();
   const paymentMethods = normalizePaymentMethods(
     input.paymentMethods?.length ? input.paymentMethods : defaultPaymentMethods(),
   );
@@ -81,6 +85,7 @@ export async function updatePlayerAction(input: {
   playerId: string;
   name: string;
 }): Promise<void> {
+  await requireAuth();
   await updateTable(input.slug, (table) => {
     if (table.status !== "OPEN") {
       throw new Error("Table is closed");
@@ -106,6 +111,7 @@ export async function deletePlayerAction(input: {
   slug: string;
   playerId: string;
 }): Promise<void> {
+  await requireAuth();
   await updateTable(input.slug, (table) => {
     if (table.status !== "OPEN") {
       throw new Error("Table is closed");
@@ -125,6 +131,7 @@ export async function addBuyInAction(input: {
   playerId: string;
   chips: number;
 }): Promise<void> {
+  await requireAuth();
   if (input.chips <= 0) {
     throw new Error("Buy-in must be greater than zero");
   }
@@ -174,6 +181,7 @@ export async function updateBuyInAction(input: {
   buyInId: string;
   chips: number;
 }): Promise<void> {
+  await requireAuth();
   if (input.chips <= 0) {
     throw new Error("Buy-in must be greater than zero");
   }
@@ -208,6 +216,7 @@ export async function deleteBuyInAction(input: {
   playerId: string;
   buyInId: string;
 }): Promise<void> {
+  await requireAuth();
   await updateTable(input.slug, (table) => {
     if (table.status !== "OPEN") {
       throw new Error("Table is closed");
@@ -230,6 +239,7 @@ export async function deleteBuyInAction(input: {
 }
 
 export async function startCashOutAction(slug: string): Promise<void> {
+  await requireAuth();
   await updateTable(slug, (table) => ({
     ...table,
     status: "CASHING_OUT",
@@ -238,6 +248,7 @@ export async function startCashOutAction(slug: string): Promise<void> {
 }
 
 export async function reopenTableAction(slug: string): Promise<void> {
+  await requireAuth();
   await updateTable(slug, (table) => ({
     ...table,
     status: "OPEN",
@@ -252,6 +263,7 @@ export async function setCashOutAction(input: {
   playerId: string;
   chips: number;
 }): Promise<void> {
+  await requireAuth();
   if (input.chips < 0) {
     throw new Error("Cash-out cannot be negative");
   }
@@ -285,6 +297,7 @@ export async function setCashOutAction(input: {
 }
 
 export async function settleTableAction(slug: string): Promise<void> {
+  await requireAuth();
   await updateTable(slug, (table) => {
     if (table.status !== "CASHING_OUT") {
       throw new Error("Table is not in cash-out mode");
@@ -311,6 +324,7 @@ export async function markTransferPaidAction(input: {
   slug: string;
   transferId: string;
 }): Promise<void> {
+  await requireAuth();
   await updateTable(input.slug, (table) => ({
     ...table,
     transfers: table.transfers.map((transfer) =>
@@ -331,6 +345,7 @@ export async function undoTransferPaidAction(input: {
   slug: string;
   transferId: string;
 }): Promise<void> {
+  await requireAuth();
   await updateTable(input.slug, (table) => ({
     ...table,
     transfers: table.transfers.map((transfer) =>
@@ -353,6 +368,7 @@ export async function updateTableSettingsAction(input: {
   date?: string;
   chipsPerUsd?: number;
 }): Promise<void> {
+  await requireAuth();
   if (input.date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
     throw new Error("Enter a valid date");
   }

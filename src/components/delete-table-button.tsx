@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { deleteTableAction } from "@/app/actions/table";
+import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
 import { Button } from "@/components/ui/button";
 import { removeRecentTable } from "@/lib/recent-tables";
 import { cn } from "@/lib/utils";
@@ -26,8 +27,14 @@ export function DeleteTableButton({
 }: DeleteTableButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const canEdit = useCanEdit();
 
   function handleDelete() {
+    if (!canEdit) {
+      promptGoogleSignIn();
+      return;
+    }
+
     const label = tableName?.trim() || "this game";
     if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
 
@@ -42,6 +49,10 @@ export function DeleteTableButton({
         toast.error(error instanceof Error ? error.message : "Could not delete game");
       }
     });
+  }
+
+  if (!canEdit) {
+    return null;
   }
 
   if (variant === "text") {

@@ -11,6 +11,7 @@ import {
   setCashOutAction,
   settleTableAction,
 } from "@/app/actions/table";
+import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
 import { TableCallout } from "@/components/table/table-callout";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ async function fetchTable(slug: string): Promise<TableState> {
 export function CashOutView({ initialTable }: CashOutViewProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const canEdit = useCanEdit();
 
   const { data: table, mutate } = useSWR(
     `/api/tables/${initialTable.slug}`,
@@ -60,6 +62,11 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
   const balance = validateChipBalance(table.players);
 
   function handleCashOut(playerId: string, chips: number) {
+    if (!canEdit) {
+      promptGoogleSignIn();
+      return;
+    }
+
     startTransition(async () => {
       try {
         await setCashOutAction({ slug: table.slug, playerId, chips });
@@ -71,6 +78,11 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
   }
 
   function handleSettle() {
+    if (!canEdit) {
+      promptGoogleSignIn();
+      return;
+    }
+
     startTransition(async () => {
       try {
         await settleTableAction(table.slug);
@@ -83,6 +95,11 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
   }
 
   function handleReopen() {
+    if (!canEdit) {
+      promptGoogleSignIn();
+      return;
+    }
+
     startTransition(async () => {
       try {
         await reopenTableAction(table.slug);
@@ -128,9 +145,11 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
               inputMode="numeric"
               defaultValue={player.cashOut?.chips ?? ""}
               placeholder="0"
+              readOnly={!canEdit}
               aria-label={`Final chips for ${player.name}`}
               className="h-9 w-[4.5rem] shrink-0 px-2 text-center text-sm tabular-nums"
               onBlur={(event) => {
+                if (!canEdit) return;
                 const chips = Number(event.target.value);
                 if (!Number.isFinite(chips) || chips < 0) return;
                 if (player.cashOut?.chips === chips) return;
@@ -149,7 +168,7 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
           Go to Pay up
           <ArrowRight className="size-4" />
         </Link>
-      ) : (
+      ) : canEdit ? (
         <>
           <Button
             type="button"
@@ -169,7 +188,7 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
             Reopen table
           </Button>
         </>
-      )}
+      ) : null}
     </div>
   );
 }
