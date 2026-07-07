@@ -1,7 +1,7 @@
 import { Redis } from "@upstash/redis";
 import { nanoid } from "nanoid";
 import { DEFAULT_CHIPS_PER_USD } from "./constants";
-import { formatDefaultTableName } from "./format";
+import { chipsToUsd, formatDefaultTableName, totalBuyInChips } from "./format";
 import { normalizeTable } from "./payments";
 import type { TableState } from "./types";
 
@@ -12,6 +12,43 @@ export interface RecentTableSummary {
   slug: string;
   name: string | null;
   date: string;
+  playerCount: number;
+  potUsd: number;
+  closedLabel: string;
+  paymentsLabel: string;
+}
+
+function toRecentTableSummary(table: TableState): RecentTableSummary {
+  const potChips = table.players.reduce(
+    (sum, player) => sum + totalBuyInChips(player.buyIns),
+    0,
+  );
+  const potUsd = chipsToUsd(potChips, table.chipsPerUsd);
+  const closedLabel = table.status === "OPEN" ? "Open" : "Closed";
+
+  let paymentsLabel = "—";
+  if (table.status === "CASHING_OUT") {
+    paymentsLabel = "Not settled";
+  } else if (table.status === "SETTLED") {
+    if (table.transfers.length === 0) {
+      paymentsLabel = "All even";
+    } else {
+      const pendingCount = table.transfers.filter(
+        (transfer) => transfer.status === "PENDING",
+      ).length;
+      paymentsLabel = pendingCount === 0 ? "All paid" : `${pendingCount} pending`;
+    }
+  }
+
+  return {
+    slug: table.slug,
+    name: table.name,
+    date: table.date,
+    playerCount: table.players.length,
+    potUsd,
+    closedLabel,
+    paymentsLabel,
+  };
 }
 
 function tableKey(slug: string): string {
@@ -67,11 +104,7 @@ export async function listRecentTables(
   const tables = await Promise.all(slugs.map((slug) => getTable(slug)));
   return tables
     .filter((table): table is TableState => table !== null)
-    .map((table) => ({
-      slug: table.slug,
-      name: table.name,
-      date: table.date,
-    }));
+    .map(toRecentTableSummary);
 }
 
 function generateTableCode(): string {
