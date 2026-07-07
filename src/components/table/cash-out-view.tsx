@@ -12,17 +12,20 @@ import { formatBuyInSummary, formatChips } from "@/lib/format";
 import { validateChipBalance } from "@/lib/settlement";
 import type { Player, TableState } from "@/lib/types";
 
+const UNENTERED_CASH_OUT = "?";
+
 function savedChips(player: Player): number | null {
   return player.cashOut?.chips ?? null;
 }
 
 function chipsToDraft(chips: number | null): string {
-  return chips === null ? "" : String(chips);
+  return chips === null ? UNENTERED_CASH_OUT : String(chips);
 }
 
 function parseDraft(draft: string): number | null {
-  if (draft.trim() === "") return null;
-  const chips = Number(draft);
+  const trimmed = draft.trim();
+  if (trimmed === "" || trimmed === UNENTERED_CASH_OUT) return null;
+  const chips = Number(trimmed);
   if (!Number.isFinite(chips) || chips < 0) return null;
   return chips;
 }
@@ -43,17 +46,32 @@ function CashOutPlayerRow({ player, canEdit, isPending, onSave }: CashOutPlayerR
   }, [player.cashOut?.chips]);
 
   const parsed = parseDraft(draft);
-  const isValid = draft.trim() === "" || parsed !== null;
-  const isDirty = draft.trim() === "" ? saved !== null : parsed !== saved;
+  const isUnentered = saved === null && draft === UNENTERED_CASH_OUT;
+  const isValid =
+    draft.trim() === "" ||
+    draft.trim() === UNENTERED_CASH_OUT ||
+    parsed !== null;
+  const isDirty = saved === null ? parsed !== null : parsed !== saved;
 
   function handleConfirm() {
-    const chips = draft.trim() === "" ? 0 : parsed;
-    if (chips === null) return;
-    onSave(player.id, chips);
+    if (parsed === null) return;
+    onSave(player.id, parsed);
   }
 
   function handleDiscard() {
     setDraft(chipsToDraft(saved));
+  }
+
+  function handleFocus() {
+    if (draft === UNENTERED_CASH_OUT) {
+      setDraft("");
+    }
+  }
+
+  function handleBlur() {
+    if (saved === null && draft.trim() === "") {
+      setDraft(UNENTERED_CASH_OUT);
+    }
   }
 
   return (
@@ -95,12 +113,18 @@ function CashOutPlayerRow({ player, canEdit, isPending, onSave }: CashOutPlayerR
           id={`cashout-${player.id}`}
           inputMode="numeric"
           value={draft}
-          placeholder="0"
+          placeholder={UNENTERED_CASH_OUT}
           readOnly={!canEdit}
           aria-label={`Final chips for ${player.name}`}
           aria-invalid={!isValid}
-          className="h-9 w-[4.5rem] shrink-0 px-2 text-center text-sm tabular-nums"
+          className={
+            isUnentered
+              ? "h-9 w-[4.5rem] shrink-0 px-2 text-center text-sm text-muted-foreground"
+              : "h-9 w-[4.5rem] shrink-0 px-2 text-center text-sm tabular-nums"
+          }
           onChange={(event) => setDraft(event.target.value)}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           onKeyDown={(event) => {
             if (!canEdit || !isDirty) return;
             if (event.key === "Enter") {
