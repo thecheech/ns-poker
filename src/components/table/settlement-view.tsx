@@ -176,8 +176,7 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
                       <Button
                         type="button"
                         size="sm"
-                        variant="destructive"
-                        className="h-8 shrink-0 rounded-full px-3 text-xs font-medium"
+                        className="h-8 shrink-0 rounded-full bg-destructive px-3 text-xs font-medium text-white hover:bg-destructive/90"
                         onClick={() => handleMarkPaid(transfer.id)}
                         disabled={isPending}
                       >

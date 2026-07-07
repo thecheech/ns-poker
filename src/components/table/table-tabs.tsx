@@ -9,7 +9,7 @@ interface TableTabsProps {
 }
 
 const tabs = [
-  { id: "players", label: "Buy-ins", href: (slug: string) => `/t/${slug}` },
+  { id: "players", label: "Buy-in", href: (slug: string) => `/t/${slug}` },
   { id: "chips", label: "Cash-out", href: (slug: string) => `/t/${slug}/cash-out` },
   { id: "settle", label: "Pay up", href: (slug: string) => `/t/${slug}/settlement` },
 ] as const;

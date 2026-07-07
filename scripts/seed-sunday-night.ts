@@ -64,7 +64,7 @@ async function main() {
     player("Bailey", 2, 0, cashOutAt),
     player("Egor", 2, null, cashOutAt),
     player("Vihan", 2, null, cashOutAt),
-    player("Kutay", 2, 8_350, cashOutAt),
+    player("Kutay", 2, 13_350, cashOutAt),
     player("Koby", 1, 21_450, cashOutAt),
     player("Adi", 1, 10_400, cashOutAt),
     player("Blurry", 1, 0, cashOutAt),
