@@ -1,4 +1,3 @@
-import { Github } from "lucide-react";
 import { AppHeader } from "@/components/branding/header";
 import { NsLogo } from "@/components/branding/logo";
 import { CreateTableButton } from "@/components/home/create-table-button";
@@ -29,9 +28,8 @@ export default function HomePage() {
           href={GITHUB_REPO_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          <Github className="size-4" />
           View on GitHub
         </a>
       </main>
