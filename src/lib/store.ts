@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { DEFAULT_CHIPS_PER_USD } from "./constants";
 import { chipsToUsd, formatDefaultTableName, totalBuyInChips } from "./format";
 import { normalizeTable } from "./payments";
+import { computeTransfers } from "./settlement";
 import type { TableState } from "./types";
 
 const RECENT_TABLES_KEY = "tables:recent";
@@ -27,11 +28,9 @@ function toRecentTableSummary(table: TableState): RecentTableSummary {
   const closedLabel = table.status === "OPEN" ? "Open" : "Closed";
 
   let paymentsLabel = "—";
-  if (table.status === "CASHING_OUT") {
-    paymentsLabel = "Not settled";
-  } else if (table.status === "SETTLED") {
+  if (table.status === "CASHING_OUT" || table.status === "SETTLED") {
     if (table.transfers.length === 0) {
-      paymentsLabel = "All even";
+      paymentsLabel = table.status === "CASHING_OUT" ? "Entering counts" : "All even";
     } else {
       const pendingCount = table.transfers.filter(
         (transfer) => transfer.status === "PENDING",
@@ -148,4 +147,18 @@ export async function updateTable(
   const updated = updater(table);
   await saveTable(updated);
   return updated;
+}
+
+export async function syncSettlementTransfers(
+  slug: string,
+): Promise<TableState | null> {
+  const table = await getTable(slug);
+  if (!table || table.status === "OPEN") {
+    return table;
+  }
+
+  return updateTable(slug, (current) => ({
+    ...current,
+    transfers: computeTransfers(current.players, current.chipsPerUsd),
+  }));
 }

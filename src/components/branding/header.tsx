@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ScrollText } from "lucide-react";
 import { AuthButton } from "@/components/auth/auth-button";
 
 export function AppHeader() {
@@ -13,7 +13,17 @@ export function AppHeader() {
           <ChevronLeft className="size-4" />
           Home
         </Link>
-        <AuthButton />
+        <div className="flex items-center gap-1">
+          <Link
+            href="/audit"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground active:opacity-80"
+            title="Audit Log"
+          >
+            <ScrollText className="size-4" />
+            Log
+          </Link>
+          <AuthButton />
+        </div>
       </div>
     </header>
   );

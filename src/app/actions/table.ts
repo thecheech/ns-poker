@@ -2,22 +2,54 @@
 
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
+import { recordAuditEvent } from "@/lib/audit";
+import { requireAuth } from "@/lib/auth";
 import { STANDARD_BUY_IN_CHIPS } from "@/lib/constants";
+import { formatChips, formatDate, formatUsd } from "@/lib/format";
+import { defaultPaymentMethods, normalizePaymentMethods } from "@/lib/payments";
 import { computeTransfers } from "@/lib/settlement";
 import { createTable, deleteTable, getTable, updateTable } from "@/lib/store";
 import type { PaymentMethod, TableState } from "@/lib/types";
-import { requireAuth } from "@/lib/auth";
-import { normalizePaymentMethods, defaultPaymentMethods } from "@/lib/payments";
 
 function revalidateTable(slug: string) {
   revalidatePath(`/t/${slug}`);
   revalidatePath(`/t/${slug}/cash-out`);
   revalidatePath(`/t/${slug}/settlement`);
+  revalidatePath(`/t/${slug}/audit`);
+  revalidatePath("/audit");
+}
+
+function playerName(table: TableState, playerId: string): string {
+  return table.players.find((player) => player.id === playerId)?.name ?? "Unknown";
+}
+
+function transferSummary(
+  table: TableState,
+  transferId: string,
+): { from: string; to: string; amount: string } | null {
+  const transfer = table.transfers.find((item) => item.id === transferId);
+  if (!transfer) return null;
+
+  const from = playerName(table, transfer.fromPlayerId);
+  const to = playerName(table, transfer.toPlayerId);
+  const amount = formatUsd(transfer.amountUsd);
+  return { from, to, amount };
 }
 
 export async function createTableAction(): Promise<{ slug: string; name: string }> {
-  await requireAuth();
+  const actor = await requireAuth();
   const table = await createTable();
+
+  await recordAuditEvent({
+    action: "table.created",
+    actor,
+    tableSlug: table.slug,
+    tableName: table.name,
+    summary: "Created table",
+    after: table.name,
+  });
+
+  revalidatePath("/audit");
   return { slug: table.slug, name: table.name ?? table.slug };
 }
 
@@ -26,11 +58,21 @@ export async function getTableAction(slug: string): Promise<TableState | null> {
 }
 
 export async function deleteTableAction(slug: string): Promise<void> {
-  await requireAuth();
+  const actor = await requireAuth();
   const table = await getTable(slug);
   if (!table) {
     throw new Error("Table not found");
   }
+
+  await recordAuditEvent({
+    action: "table.deleted",
+    actor,
+    tableSlug: slug,
+    tableName: table.name,
+    summary: "Deleted table",
+    before: table.name,
+    after: null,
+  });
 
   await deleteTable(slug);
   revalidatePath("/");
@@ -42,26 +84,32 @@ export async function addPlayerAction(input: {
   name: string;
   paymentMethods?: PaymentMethod[];
 }): Promise<{ playerId: string }> {
-  await requireAuth();
+  const actor = await requireAuth();
+  const table = await getTable(input.slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
   const paymentMethods = normalizePaymentMethods(
     input.paymentMethods?.length ? input.paymentMethods : defaultPaymentMethods(),
   );
 
   const playerId = nanoid();
   const now = new Date().toISOString();
+  const playerNameValue = input.name.trim();
 
-  await updateTable(input.slug, (table) => {
-    if (table.status !== "OPEN") {
+  await updateTable(input.slug, (current) => {
+    if (current.status !== "OPEN") {
       throw new Error("Table is closed");
     }
 
     return {
-      ...table,
+      ...current,
       players: [
-        ...table.players,
+        ...current.players,
         {
           id: playerId,
-          name: input.name.trim(),
+          name: playerNameValue,
           paymentMethods,
           buyIns: [
             {
@@ -76,6 +124,17 @@ export async function addPlayerAction(input: {
     };
   });
 
+  await recordAuditEvent({
+    action: "player.added",
+    actor,
+    tableSlug: input.slug,
+    tableName: table.name,
+    summary: "Added player",
+    before: null,
+    after: `${playerNameValue} (${formatChips(STANDARD_BUY_IN_CHIPS)} chips)`,
+    target: playerNameValue,
+  });
+
   revalidateTable(input.slug);
   return { playerId };
 }
@@ -85,23 +144,46 @@ export async function updatePlayerAction(input: {
   playerId: string;
   name: string;
 }): Promise<void> {
-  await requireAuth();
-  await updateTable(input.slug, (table) => {
-    if (table.status !== "OPEN") {
+  const actor = await requireAuth();
+  const table = await getTable(input.slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  const existing = table.players.find((player) => player.id === input.playerId);
+  if (!existing) {
+    throw new Error("Player not found");
+  }
+
+  const nextName = input.name.trim();
+
+  await updateTable(input.slug, (current) => {
+    if (current.status !== "OPEN") {
       throw new Error("Table is closed");
     }
 
     return {
-      ...table,
-      players: table.players.map((player) =>
+      ...current,
+      players: current.players.map((player) =>
         player.id === input.playerId
           ? {
               ...player,
-              name: input.name.trim(),
+              name: nextName,
             }
           : player,
       ),
     };
+  });
+
+  await recordAuditEvent({
+    action: "player.renamed",
+    actor,
+    tableSlug: input.slug,
+    tableName: table.name,
+    summary: "Renamed player",
+    before: existing.name,
+    after: nextName,
+    target: existing.name,
   });
 
   revalidateTable(input.slug);
@@ -111,16 +193,37 @@ export async function deletePlayerAction(input: {
   slug: string;
   playerId: string;
 }): Promise<void> {
-  await requireAuth();
-  await updateTable(input.slug, (table) => {
-    if (table.status !== "OPEN") {
+  const actor = await requireAuth();
+  const table = await getTable(input.slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  const existing = table.players.find((player) => player.id === input.playerId);
+  if (!existing) {
+    throw new Error("Player not found");
+  }
+
+  await updateTable(input.slug, (current) => {
+    if (current.status !== "OPEN") {
       throw new Error("Table is closed");
     }
 
     return {
-      ...table,
-      players: table.players.filter((player) => player.id !== input.playerId),
+      ...current,
+      players: current.players.filter((player) => player.id !== input.playerId),
     };
+  });
+
+  await recordAuditEvent({
+    action: "player.deleted",
+    actor,
+    tableSlug: input.slug,
+    tableName: table.name,
+    summary: "Removed player",
+    before: existing.name,
+    after: null,
+    target: existing.name,
   });
 
   revalidateTable(input.slug);
@@ -131,19 +234,26 @@ export async function addBuyInAction(input: {
   playerId: string;
   chips: number;
 }): Promise<void> {
-  await requireAuth();
+  const actor = await requireAuth();
   if (input.chips <= 0) {
     throw new Error("Buy-in must be greater than zero");
   }
 
-  await updateTable(input.slug, (table) => {
-    if (table.status !== "OPEN") {
+  const table = await getTable(input.slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  const name = playerName(table, input.playerId);
+
+  await updateTable(input.slug, (current) => {
+    if (current.status !== "OPEN") {
       throw new Error("Table is closed");
     }
 
     return {
-      ...table,
-      players: table.players.map((player) =>
+      ...current,
+      players: current.players.map((player) =>
         player.id === input.playerId
           ? {
               ...player,
@@ -159,6 +269,17 @@ export async function addBuyInAction(input: {
           : player,
       ),
     };
+  });
+
+  await recordAuditEvent({
+    action: "buy_in.added",
+    actor,
+    tableSlug: input.slug,
+    tableName: table.name,
+    summary: "Added buy-in",
+    before: null,
+    after: formatChips(input.chips),
+    target: name,
   });
 
   revalidateTable(input.slug);
@@ -181,31 +302,53 @@ export async function updateBuyInAction(input: {
   buyInId: string;
   chips: number;
 }): Promise<void> {
-  await requireAuth();
+  const actor = await requireAuth();
   if (input.chips <= 0) {
     throw new Error("Buy-in must be greater than zero");
   }
 
-  await updateTable(input.slug, (table) => {
-    if (table.status !== "OPEN") {
+  const table = await getTable(input.slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  const player = table.players.find((item) => item.id === input.playerId);
+  const buyIn = player?.buyIns.find((item) => item.id === input.buyInId);
+  if (!player || !buyIn) {
+    throw new Error("Buy-in not found");
+  }
+
+  await updateTable(input.slug, (current) => {
+    if (current.status !== "OPEN") {
       throw new Error("Table is closed");
     }
 
     return {
-      ...table,
-      players: table.players.map((player) =>
-        player.id === input.playerId
+      ...current,
+      players: current.players.map((item) =>
+        item.id === input.playerId
           ? {
-              ...player,
-              buyIns: player.buyIns.map((buyIn) =>
-                buyIn.id === input.buyInId
-                  ? { ...buyIn, chips: input.chips }
-                  : buyIn,
+              ...item,
+              buyIns: item.buyIns.map((entry) =>
+                entry.id === input.buyInId
+                  ? { ...entry, chips: input.chips }
+                  : entry,
               ),
             }
-          : player,
+          : item,
       ),
     };
+  });
+
+  await recordAuditEvent({
+    action: "buy_in.updated",
+    actor,
+    tableSlug: input.slug,
+    tableName: table.name,
+    summary: "Changed buy-in",
+    before: formatChips(buyIn.chips),
+    after: formatChips(input.chips),
+    target: player.name,
   });
 
   revalidateTable(input.slug);
@@ -216,45 +359,99 @@ export async function deleteBuyInAction(input: {
   playerId: string;
   buyInId: string;
 }): Promise<void> {
-  await requireAuth();
-  await updateTable(input.slug, (table) => {
-    if (table.status !== "OPEN") {
+  const actor = await requireAuth();
+  const table = await getTable(input.slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  const player = table.players.find((item) => item.id === input.playerId);
+  const buyIn = player?.buyIns.find((item) => item.id === input.buyInId);
+  if (!player || !buyIn) {
+    throw new Error("Buy-in not found");
+  }
+
+  await updateTable(input.slug, (current) => {
+    if (current.status !== "OPEN") {
       throw new Error("Table is closed");
     }
 
     return {
-      ...table,
-      players: table.players.map((player) =>
-        player.id === input.playerId
+      ...current,
+      players: current.players.map((item) =>
+        item.id === input.playerId
           ? {
-              ...player,
-              buyIns: player.buyIns.filter((buyIn) => buyIn.id !== input.buyInId),
+              ...item,
+              buyIns: item.buyIns.filter((entry) => entry.id !== input.buyInId),
             }
-          : player,
+          : item,
       ),
     };
+  });
+
+  await recordAuditEvent({
+    action: "buy_in.deleted",
+    actor,
+    tableSlug: input.slug,
+    tableName: table.name,
+    summary: "Removed buy-in",
+    before: formatChips(buyIn.chips),
+    after: null,
+    target: player.name,
   });
 
   revalidateTable(input.slug);
 }
 
 export async function startCashOutAction(slug: string): Promise<void> {
-  await requireAuth();
-  await updateTable(slug, (table) => ({
-    ...table,
+  const actor = await requireAuth();
+  const table = await getTable(slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  await updateTable(slug, (current) => ({
+    ...current,
     status: "CASHING_OUT",
   }));
+
+  await recordAuditEvent({
+    action: "table.closed",
+    actor,
+    tableSlug: slug,
+    tableName: table.name,
+    summary: "Closed table for cash-out",
+    before: "Live",
+    after: "Cash-out",
+  });
+
   revalidateTable(slug);
 }
 
 export async function reopenTableAction(slug: string): Promise<void> {
-  await requireAuth();
-  await updateTable(slug, (table) => ({
-    ...table,
+  const actor = await requireAuth();
+  const table = await getTable(slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  await updateTable(slug, (current) => ({
+    ...current,
     status: "OPEN",
     transfers: [],
-    players: table.players.map((player) => ({ ...player, cashOut: null })),
+    players: current.players.map((player) => ({ ...player, cashOut: null })),
   }));
+
+  await recordAuditEvent({
+    action: "table.reopened",
+    actor,
+    tableSlug: slug,
+    tableName: table.name,
+    summary: "Reopened table",
+    before: table.status === "SETTLED" ? "Settled" : "Cash-out",
+    after: "Live",
+  });
+
   revalidateTable(slug);
 }
 
@@ -263,80 +460,96 @@ export async function setCashOutAction(input: {
   playerId: string;
   chips: number;
 }): Promise<void> {
-  await requireAuth();
+  const actor = await requireAuth();
   if (input.chips < 0) {
     throw new Error("Cash-out cannot be negative");
   }
 
-  await updateTable(input.slug, (table) => {
-    if (table.status !== "CASHING_OUT" && table.status !== "SETTLED") {
+  const table = await getTable(input.slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  const name = playerName(table, input.playerId);
+  const previous = table.players.find((player) => player.id === input.playerId)?.cashOut;
+
+  await updateTable(input.slug, (current) => {
+    if (current.status !== "CASHING_OUT" && current.status !== "SETTLED") {
       throw new Error("Table is not in cash-out mode");
     }
 
-    const revertingFromSettlement = table.status === "SETTLED";
+    const players = current.players.map((player) =>
+      player.id === input.playerId
+        ? {
+            ...player,
+            cashOut: {
+              chips: input.chips,
+              createdAt: new Date().toISOString(),
+            },
+          }
+        : player,
+    );
 
     return {
-      ...table,
+      ...current,
       status: "CASHING_OUT",
-      transfers: revertingFromSettlement ? [] : table.transfers,
-      players: table.players.map((player) =>
-        player.id === input.playerId
-          ? {
-              ...player,
-              cashOut: {
-                chips: input.chips,
-                createdAt: new Date().toISOString(),
-              },
-            }
-          : player,
-      ),
+      players,
+      transfers: computeTransfers(players, current.chipsPerUsd),
     };
+  });
+
+  await recordAuditEvent({
+    action: "cash_out.set",
+    actor,
+    tableSlug: input.slug,
+    tableName: table.name,
+    summary: "Set cash-out",
+    before: previous ? formatChips(previous.chips) : null,
+    after: formatChips(input.chips),
+    target: name,
   });
 
   revalidateTable(input.slug);
-}
-
-export async function settleTableAction(slug: string): Promise<void> {
-  await requireAuth();
-  await updateTable(slug, (table) => {
-    if (table.status !== "CASHING_OUT") {
-      throw new Error("Table is not in cash-out mode");
-    }
-
-    const settledAt = new Date().toISOString();
-    const players = table.players.map((player) => ({
-      ...player,
-      cashOut: player.cashOut ?? { chips: 0, createdAt: settledAt },
-    }));
-
-    return {
-      ...table,
-      status: "SETTLED",
-      players,
-      transfers: computeTransfers(players, table.chipsPerUsd),
-    };
-  });
-
-  revalidateTable(slug);
 }
 
 export async function markTransferPaidAction(input: {
   slug: string;
   transferId: string;
 }): Promise<void> {
-  await requireAuth();
-  await updateTable(input.slug, (table) => ({
-    ...table,
-    transfers: table.transfers.map((transfer) =>
-      transfer.id === input.transferId
+  const actor = await requireAuth();
+  const table = await getTable(input.slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  const transfer = transferSummary(table, input.transferId);
+  if (!transfer) {
+    throw new Error("Transfer not found");
+  }
+
+  await updateTable(input.slug, (current) => ({
+    ...current,
+    transfers: current.transfers.map((item) =>
+      item.id === input.transferId
         ? {
-            ...transfer,
+            ...item,
             status: "PAID",
             paidAt: new Date().toISOString(),
           }
-        : transfer,
+        : item,
     ),
   }));
+
+  await recordAuditEvent({
+    action: "transfer.marked_paid",
+    actor,
+    tableSlug: input.slug,
+    tableName: table.name,
+    summary: "Marked transfer paid",
+    before: "Pending",
+    after: "Paid",
+    target: `${transfer.from} → ${transfer.to} (${transfer.amount})`,
+  });
 
   revalidateTable(input.slug);
 }
@@ -345,19 +558,40 @@ export async function undoTransferPaidAction(input: {
   slug: string;
   transferId: string;
 }): Promise<void> {
-  await requireAuth();
-  await updateTable(input.slug, (table) => ({
-    ...table,
-    transfers: table.transfers.map((transfer) =>
-      transfer.id === input.transferId
+  const actor = await requireAuth();
+  const table = await getTable(input.slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  const transfer = transferSummary(table, input.transferId);
+  if (!transfer) {
+    throw new Error("Transfer not found");
+  }
+
+  await updateTable(input.slug, (current) => ({
+    ...current,
+    transfers: current.transfers.map((item) =>
+      item.id === input.transferId
         ? {
-            ...transfer,
+            ...item,
             status: "PENDING",
             paidAt: null,
           }
-        : transfer,
+        : item,
     ),
   }));
+
+  await recordAuditEvent({
+    action: "transfer.unmarked_paid",
+    actor,
+    tableSlug: input.slug,
+    tableName: table.name,
+    summary: "Undid paid transfer",
+    before: "Paid",
+    after: "Pending",
+    target: `${transfer.from} → ${transfer.to} (${transfer.amount})`,
+  });
 
   revalidateTable(input.slug);
 }
@@ -368,13 +602,23 @@ export async function updateTableSettingsAction(input: {
   date?: string;
   chipsPerUsd?: number;
 }): Promise<void> {
-  await requireAuth();
+  const actor = await requireAuth();
   if (input.date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
     throw new Error("Enter a valid date");
   }
 
-  await updateTable(input.slug, (table) => {
-    if (input.chipsPerUsd !== undefined && table.status !== "OPEN") {
+  const table = await getTable(input.slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  const nextName =
+    input.name !== undefined ? input.name.trim() || table.name : table.name;
+  const nextDate = input.date ?? table.date;
+  const nextChipsPerUsd = input.chipsPerUsd ?? table.chipsPerUsd;
+
+  await updateTable(input.slug, (current) => {
+    if (input.chipsPerUsd !== undefined && current.status !== "OPEN") {
       throw new Error("Settings can only be changed while table is open");
     }
 
@@ -386,12 +630,48 @@ export async function updateTableSettingsAction(input: {
     }
 
     return {
-      ...table,
-      name: input.name !== undefined ? input.name.trim() || table.name : table.name,
-      date: input.date ?? table.date,
-      chipsPerUsd: input.chipsPerUsd ?? table.chipsPerUsd,
+      ...current,
+      name: nextName,
+      date: nextDate,
+      chipsPerUsd: nextChipsPerUsd,
     };
   });
+
+  if (input.name !== undefined && nextName !== table.name) {
+    await recordAuditEvent({
+      action: "table.settings_updated",
+      actor,
+      tableSlug: input.slug,
+      tableName: nextName,
+      summary: "Changed table name",
+      before: table.name,
+      after: nextName,
+    });
+  }
+
+  if (input.date !== undefined && nextDate !== table.date) {
+    await recordAuditEvent({
+      action: "table.settings_updated",
+      actor,
+      tableSlug: input.slug,
+      tableName: nextName,
+      summary: "Changed table date",
+      before: formatDate(table.date),
+      after: formatDate(nextDate),
+    });
+  }
+
+  if (input.chipsPerUsd !== undefined && nextChipsPerUsd !== table.chipsPerUsd) {
+    await recordAuditEvent({
+      action: "table.settings_updated",
+      actor,
+      tableSlug: input.slug,
+      tableName: nextName,
+      summary: "Changed chips per dollar",
+      before: String(table.chipsPerUsd),
+      after: String(nextChipsPerUsd),
+    });
+  }
 
   revalidateTable(input.slug);
   revalidatePath("/");

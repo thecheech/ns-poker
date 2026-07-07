@@ -8,8 +8,9 @@ import { markTransferPaidAction, undoTransferPaidAction } from "@/app/actions/ta
 import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
 import { TableCallout } from "@/components/table/table-callout";
 import { Button } from "@/components/ui/button";
-import { formatUsd } from "@/lib/format";
+import { formatChips, formatUsd } from "@/lib/format";
 import { UNMATCHED_PLAYER_ID } from "@/lib/constants";
+import { validateChipBalance } from "@/lib/settlement";
 import { cn } from "@/lib/utils";
 import type { TableState } from "@/lib/types";
 
@@ -58,19 +59,7 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
     );
   }
 
-  if (table.status === "CASHING_OUT") {
-    return (
-      <div className="mx-auto max-w-lg px-4 pb-8 pt-4">
-        <TableCallout
-          message="Enter all chip counts, then compute settlement."
-          actionLabel="Go to Cash-out"
-          actionHref={`/t/${table.slug}/cash-out`}
-          variant="default"
-        />
-      </div>
-    );
-  }
-
+  const balance = validateChipBalance(table.players);
   const playerMap = new Map(table.players.map((player) => [player.id, player]));
   const pendingCount = table.transfers.filter((t) => t.status === "PENDING").length;
   const allPaid = pendingCount === 0 && table.transfers.length > 0;
@@ -111,6 +100,13 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 px-4 pb-8 pt-4">
+      {!balance.valid ? (
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
+          Chip counts are off by {formatChips(Math.abs(balance.difference))}. Payments
+          below may change as counts are updated on Cash-out.
+        </p>
+      ) : null}
+
       <p className="text-sm text-muted-foreground">
         {table.transfers.length > 0
           ? allPaid

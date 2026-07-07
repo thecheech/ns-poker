@@ -3,14 +3,9 @@
 import Link from "next/link";
 import useSWR from "swr";
 import { ArrowRight, Check, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import {
-  reopenTableAction,
-  setCashOutAction,
-  settleTableAction,
-} from "@/app/actions/table";
+import { reopenTableAction, setCashOutAction } from "@/app/actions/table";
 import { promptGoogleSignIn, useCanEdit } from "@/components/auth/auth-button";
 import { TableCallout } from "@/components/table/table-callout";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -137,7 +132,6 @@ async function fetchTable(slug: string): Promise<TableState> {
 }
 
 export function CashOutView({ initialTable }: CashOutViewProps) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const canEdit = useCanEdit();
 
@@ -164,7 +158,6 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
     );
   }
 
-  const isSettled = table.status === "SETTLED";
   const balance = validateChipBalance(table.players);
 
   function handleCashOut(playerId: string, chips: number) {
@@ -183,23 +176,6 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
     });
   }
 
-  function handleSettle() {
-    if (!canEdit) {
-      promptGoogleSignIn();
-      return;
-    }
-
-    startTransition(async () => {
-      try {
-        await settleTableAction(table.slug);
-        toast.success("Settlement ready!");
-        router.push(`/t/${table.slug}/settlement`);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Could not settle");
-      }
-    });
-  }
-
   function handleReopen() {
     if (!canEdit) {
       promptGoogleSignIn();
@@ -210,7 +186,6 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
       try {
         await reopenTableAction(table.slug);
         toast.success("Table reopened");
-        router.push(`/t/${table.slug}`);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not reopen");
       }
@@ -249,34 +224,24 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
         ))}
       </div>
 
-      {isSettled ? (
-        <Link
-          href={`/t/${table.slug}/settlement`}
-          className={cn(buttonVariants(), "h-11 w-full gap-1.5")}
+      <Link
+        href={`/t/${table.slug}/settlement`}
+        className={cn(buttonVariants(), "h-11 w-full gap-1.5")}
+      >
+        Go to Pay up
+        <ArrowRight className="size-4" />
+      </Link>
+
+      {canEdit ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 w-full"
+          onClick={handleReopen}
+          disabled={isPending}
         >
-          Go to Pay up
-          <ArrowRight className="size-4" />
-        </Link>
-      ) : canEdit ? (
-        <>
-          <Button
-            type="button"
-            className="h-11 w-full"
-            onClick={handleSettle}
-            disabled={isPending}
-          >
-            Compute settlement
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10 w-full"
-            onClick={handleReopen}
-            disabled={isPending}
-          >
-            Reopen table
-          </Button>
-        </>
+          Reopen table
+        </Button>
       ) : null}
     </div>
   );

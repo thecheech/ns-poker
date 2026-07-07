@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { SettlementView } from "@/components/table/settlement-view";
-import { getTable } from "@/lib/store";
+import { getTable, syncSettlementTransfers } from "@/lib/store";
 
 interface SettlementPageProps {
   params: Promise<{ slug: string }>;
@@ -8,7 +8,8 @@ interface SettlementPageProps {
 
 export default async function SettlementPage({ params }: SettlementPageProps) {
   const { slug } = await params;
-  const table = await getTable(slug);
+  const syncedTable = await syncSettlementTransfers(slug);
+  const table = syncedTable ?? (await getTable(slug));
 
   if (!table) {
     notFound();

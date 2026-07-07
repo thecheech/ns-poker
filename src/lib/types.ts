@@ -45,3 +45,35 @@ export interface TableState {
   players: Player[];
   transfers: Transfer[];
 }
+
+export type AuditAction =
+  | "table.created"
+  | "table.deleted"
+  | "table.settings_updated"
+  | "table.closed"
+  | "table.reopened"
+  | "table.settled"
+  | "player.added"
+  | "player.renamed"
+  | "player.deleted"
+  | "buy_in.added"
+  | "buy_in.updated"
+  | "buy_in.deleted"
+  | "cash_out.set"
+  | "transfer.marked_paid"
+  | "transfer.unmarked_paid";
+
+export interface AuditEvent {
+  id: string;
+  timestamp: string;
+  action: AuditAction;
+  actorId: string;
+  actorName: string | null;
+  actorEmail: string | null;
+  tableSlug: string;
+  tableName: string | null;
+  summary: string;
+  before: string | null;
+  after: string | null;
+  target: string | null;
+}

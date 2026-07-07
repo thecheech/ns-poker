@@ -12,9 +12,11 @@ const tabs = [
   { id: "players", label: "Buy-ins", href: (slug: string) => `/t/${slug}` },
   { id: "chips", label: "Cash-out", href: (slug: string) => `/t/${slug}/cash-out` },
   { id: "settle", label: "Pay up", href: (slug: string) => `/t/${slug}/settlement` },
+  { id: "audit", label: "Log", href: (slug: string) => `/t/${slug}/audit` },
 ] as const;
 
 function activeTab(pathname: string, slug: string): string {
+  if (pathname === `/t/${slug}/audit`) return "audit";
   if (pathname === `/t/${slug}/settlement`) return "settle";
   if (pathname === `/t/${slug}/cash-out`) return "chips";
   return "players";
@@ -26,7 +28,7 @@ export function TableTabs({ slug }: TableTabsProps) {
 
   return (
     <nav
-      className="grid grid-cols-3 gap-1 rounded-xl border bg-muted/40 p-1"
+      className="grid grid-cols-4 gap-1 rounded-xl border bg-muted/40 p-1"
       aria-label="Table views"
     >
       {tabs.map((tab) => {
