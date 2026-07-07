@@ -73,11 +73,23 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
     }
 
     startTransition(async () => {
+      const paidAt = new Date().toISOString();
+      const optimisticTable: TableState = {
+        ...table,
+        transfers: table.transfers.map((item) =>
+          item.id === transferId
+            ? { ...item, status: "PAID", paidAt }
+            : item,
+        ),
+      };
+
       try {
+        await mutate(optimisticTable, { revalidate: false });
         await markTransferPaidAction({ slug: table.slug, transferId });
         toast.success("Marked as paid");
-        mutate();
+        await mutate();
       } catch (error) {
+        await mutate();
         toast.error(error instanceof Error ? error.message : "Could not update");
       }
     });
@@ -90,11 +102,22 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
     }
 
     startTransition(async () => {
+      const optimisticTable: TableState = {
+        ...table,
+        transfers: table.transfers.map((item) =>
+          item.id === transferId
+            ? { ...item, status: "PENDING", paidAt: null }
+            : item,
+        ),
+      };
+
       try {
+        await mutate(optimisticTable, { revalidate: false });
         await undoTransferPaidAction({ slug: table.slug, transferId });
         toast.success("Marked as pending");
-        mutate();
+        await mutate();
       } catch (error) {
+        await mutate();
         toast.error(error instanceof Error ? error.message : "Could not update");
       }
     });

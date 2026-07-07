@@ -159,6 +159,10 @@ export async function syncSettlementTransfers(
 
   return updateTable(slug, (current) => ({
     ...current,
-    transfers: computeTransfers(current.players, current.chipsPerUsd),
+    transfers: computeTransfers(
+      current.players,
+      current.chipsPerUsd,
+      current.transfers,
+    ),
   }));
 }

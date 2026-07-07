@@ -557,7 +557,7 @@ export async function setCashOutAction(input: {
       ...current,
       status: "CASHING_OUT",
       players,
-      transfers: computeTransfers(players, current.chipsPerUsd),
+      transfers: computeTransfers(players, current.chipsPerUsd, current.transfers),
     };
   });
 

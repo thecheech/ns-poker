@@ -9,9 +9,37 @@ interface BalanceEntry {
   amountUsd: number;
 }
 
+function transferMatchKey(
+  transfer: Pick<Transfer, "fromPlayerId" | "toPlayerId" | "amountUsd">,
+): string {
+  return `${transfer.fromPlayerId}|${transfer.toPlayerId}|${transfer.amountUsd}`;
+}
+
+function preserveTransferState(
+  computed: Transfer[],
+  existingTransfers: Transfer[],
+): Transfer[] {
+  const existingByKey = new Map(
+    existingTransfers.map((transfer) => [transferMatchKey(transfer), transfer]),
+  );
+
+  return computed.map((transfer) => {
+    const previous = existingByKey.get(transferMatchKey(transfer));
+    if (!previous) return transfer;
+
+    return {
+      ...transfer,
+      id: previous.id,
+      status: previous.status,
+      paidAt: previous.paidAt,
+    };
+  });
+}
+
 export function computeTransfers(
   players: Player[],
   chipsPerUsd: number,
+  existingTransfers: Transfer[] = [],
 ): Transfer[] {
   const balances: BalanceEntry[] = players
     .map((player) => {
@@ -109,7 +137,7 @@ export function computeTransfers(
     j += 1;
   }
 
-  return transfers;
+  return preserveTransferState(transfers, existingTransfers);
 }
 
 export function validateChipBalance(players: Player[]): {
