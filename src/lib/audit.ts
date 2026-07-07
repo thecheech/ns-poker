@@ -10,6 +10,7 @@ export interface AuditActor {
   id: string;
   name: string | null;
   email: string | null;
+  image: string | null;
 }
 
 export interface RecordAuditInput {
@@ -72,6 +73,7 @@ export async function recordAuditEvent(input: RecordAuditInput): Promise<void> {
     actorId: input.actor.id,
     actorName: input.actor.name,
     actorEmail: input.actor.email,
+    actorImage: input.actor.image,
     tableSlug: input.tableSlug,
     tableName: input.tableName,
     summary: input.summary,

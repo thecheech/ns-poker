@@ -29,6 +29,43 @@ async function fetchAuditEvents(tableSlug?: string): Promise<AuditEvent[]> {
   return response.json();
 }
 
+function AuditActorAvatar({
+  image,
+  name,
+  email,
+}: {
+  image: string | null | undefined;
+  name: string | null;
+  email: string | null;
+}) {
+  const displayName = formatAuditActorName(name, email);
+  const initials = displayName
+    .split(/\s+/)
+    .map((part) => part[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  if (image) {
+    return (
+      <img
+        src={image}
+        alt=""
+        className="size-7 shrink-0 rounded-full object-cover ring-1 ring-border/60"
+      />
+    );
+  }
+
+  return (
+    <span
+      className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-muted-foreground ring-1 ring-border/60"
+      aria-hidden
+    >
+      {initials}
+    </span>
+  );
+}
+
 function ChangeValue({
   before,
   after,
@@ -100,7 +137,12 @@ export function AuditLogView({
           return (
             <li key={event.id} className="px-4 py-3.5">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 space-y-1.5">
+                <AuditActorAvatar
+                  image={event.actorImage}
+                  name={event.actorName}
+                  email={event.actorEmail}
+                />
+                <div className="min-w-0 flex-1 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge
                       variant="secondary"

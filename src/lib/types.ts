@@ -77,6 +77,7 @@ export interface AuditEvent {
   actorId: string;
   actorName: string | null;
   actorEmail: string | null;
+  actorImage: string | null;
   tableSlug: string;
   tableName: string | null;
   summary: string;

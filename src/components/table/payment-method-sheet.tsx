@@ -97,13 +97,13 @@ export function PaymentMethodSheet({ slug, player, onSaved }: PaymentMethodSheet
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           showCloseButton
-          className="fixed inset-x-0 bottom-0 top-auto max-h-[90dvh] max-w-none translate-x-0 translate-y-0 gap-0 overflow-y-auto rounded-t-2xl rounded-b-none p-0 pb-[env(safe-area-inset-bottom)] ring-0 sm:top-1/2 sm:bottom-auto sm:max-h-[min(85vh,640px)] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:pb-0"
+          className="fixed inset-x-0 bottom-0 top-auto flex max-h-[min(90dvh,640px)] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-2xl rounded-b-none p-0 pb-[env(safe-area-inset-bottom)] ring-0 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[min(85vh,640px)] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:pb-0"
         >
-          <DialogHeader className="border-b border-border/60 px-4 py-4 text-left sm:px-6 sm:py-5">
+          <DialogHeader className="shrink-0 border-b border-border/60 px-4 py-4 text-left sm:px-6 sm:py-5">
             <DialogTitle className="text-base sm:text-lg">{player.name}</DialogTitle>
           </DialogHeader>
 
-          <div className="px-4 py-4 sm:px-6 sm:py-5">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
             <PaymentMethodEditor
               method={method}
               onChange={setMethod}
@@ -111,7 +111,7 @@ export function PaymentMethodSheet({ slug, player, onSaved }: PaymentMethodSheet
             />
           </div>
 
-          <DialogFooter className="border-t border-border/60 bg-muted/30 px-4 py-4 sm:px-6 sm:py-4">
+          <DialogFooter className="shrink-0 border-t border-border/60 bg-muted/30 px-4 py-4 sm:px-6 sm:py-4">
             <Button
               type="button"
               className="h-11 w-full text-base sm:h-10 sm:w-auto sm:min-w-28"

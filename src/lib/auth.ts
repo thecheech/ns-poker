@@ -12,5 +12,6 @@ export async function requireAuth(): Promise<AuditActor> {
     id: session.user.id ?? session.user.email ?? "unknown",
     name: session.user.name ?? null,
     email: session.user.email ?? null,
+    image: session.user.image ?? null,
   };
 }
