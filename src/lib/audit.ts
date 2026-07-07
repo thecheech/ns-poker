@@ -43,13 +43,19 @@ function tableAuditKey(slug: string): string {
 }
 
 function parseAuditEvent(raw: unknown): AuditEvent | null {
-  if (typeof raw !== "string") return null;
-
-  try {
-    return JSON.parse(raw) as AuditEvent;
-  } catch {
-    return null;
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw) as AuditEvent;
+    } catch {
+      return null;
+    }
   }
+
+  if (raw && typeof raw === "object" && "id" in raw && "action" in raw) {
+    return raw as AuditEvent;
+  }
+
+  return null;
 }
 
 async function trimExpiredEvents(redis: Redis, key: string): Promise<void> {

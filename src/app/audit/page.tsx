@@ -2,6 +2,8 @@ import { AppHeader } from "@/components/branding/header";
 import { AuditLogView } from "@/components/audit/audit-log-view";
 import { getAuditEvents } from "@/lib/audit";
 
+export const dynamic = "force-dynamic";
+
 export default async function AuditPage() {
   const events = await getAuditEvents({ limit: 100 });
 
