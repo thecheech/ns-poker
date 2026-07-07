@@ -1,0 +1,102 @@
+import { nanoid } from "nanoid";
+import type { Player, Transfer } from "./types";
+import { chipsToUsd } from "./format";
+
+interface BalanceEntry {
+  playerId: string;
+  amountUsd: number;
+}
+
+export function computeTransfers(
+  players: Player[],
+  chipsPerUsd: number,
+): Transfer[] {
+  const balances: BalanceEntry[] = players
+    .map((player) => {
+      const buyInTotal = player.buyIns.reduce((sum, b) => sum + b.chips, 0);
+      const cashOutChips = player.cashOut?.chips ?? 0;
+      const netChips = cashOutChips - buyInTotal;
+      const amountUsd = chipsToUsd(netChips, chipsPerUsd);
+
+      return {
+        playerId: player.id,
+        amountUsd: Math.round(amountUsd * 100) / 100,
+      };
+    })
+    .filter((entry) => Math.abs(entry.amountUsd) >= 0.01);
+
+  const creditors = balances
+    .filter((entry) => entry.amountUsd > 0)
+    .map((entry) => ({ ...entry }))
+    .sort((a, b) => b.amountUsd - a.amountUsd);
+
+  const debtors = balances
+    .filter((entry) => entry.amountUsd < 0)
+    .map((entry) => ({ ...entry, amountUsd: Math.abs(entry.amountUsd) }))
+    .sort((a, b) => b.amountUsd - a.amountUsd);
+
+  const transfers: Transfer[] = [];
+  let i = 0;
+  let j = 0;
+
+  while (i < creditors.length && j < debtors.length) {
+    const creditor = creditors[i];
+    const debtor = debtors[j];
+    const amountUsd =
+      Math.round(Math.min(creditor.amountUsd, debtor.amountUsd) * 100) / 100;
+
+    if (amountUsd < 0.01) {
+      if (creditor.amountUsd <= debtor.amountUsd) i += 1;
+      else j += 1;
+      continue;
+    }
+
+    const recipient = players.find((player) => player.id === creditor.playerId);
+    if (!recipient) {
+      i += 1;
+      continue;
+    }
+
+    transfers.push({
+      id: nanoid(),
+      fromPlayerId: debtor.playerId,
+      toPlayerId: creditor.playerId,
+      amountUsd,
+      paymentMethods: recipient.paymentMethods,
+      status: "PENDING",
+      paidAt: null,
+    });
+
+    creditor.amountUsd = Math.round((creditor.amountUsd - amountUsd) * 100) / 100;
+    debtor.amountUsd = Math.round((debtor.amountUsd - amountUsd) * 100) / 100;
+
+    if (creditor.amountUsd < 0.01) i += 1;
+    if (debtor.amountUsd < 0.01) j += 1;
+  }
+
+  return transfers;
+}
+
+export function validateChipBalance(players: Player[]): {
+  valid: boolean;
+  buyInTotal: number;
+  cashOutTotal: number;
+  difference: number;
+} {
+  const buyInTotal = players.reduce(
+    (sum, player) =>
+      sum + player.buyIns.reduce((playerSum, buyIn) => playerSum + buyIn.chips, 0),
+    0,
+  );
+  const cashOutTotal = players.reduce(
+    (sum, player) => sum + (player.cashOut?.chips ?? 0),
+    0,
+  );
+
+  return {
+    valid: buyInTotal === cashOutTotal,
+    buyInTotal,
+    cashOutTotal,
+    difference: buyInTotal - cashOutTotal,
+  };
+}
