@@ -94,6 +94,25 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
     );
   }, [table, playerFilter]);
 
+  const playerTotals = useMemo(() => {
+    if (playerFilter === ALL_PLAYERS_VALUE) return null;
+
+    let receive = 0;
+    let pay = 0;
+    for (const transfer of filteredTransfers) {
+      if (transfer.toPlayerId === playerFilter) receive += transfer.amountUsd;
+      if (transfer.fromPlayerId === playerFilter) pay += transfer.amountUsd;
+    }
+
+    return { receive, pay };
+  }, [filteredTransfers, playerFilter]);
+
+  const selectedPlayerName =
+    playerFilter === ALL_PLAYERS_VALUE
+      ? "All players"
+      : (filterPlayers.find((player) => player.id === playerFilter)?.name ??
+        transferPartyName(playerFilter, playerMap));
+
   if (!table) return null;
 
   const balance = validateChipBalance(table.players);
@@ -185,7 +204,9 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
           </Label>
           <Select value={playerFilter} onValueChange={(value) => setPlayerFilter(value ?? ALL_PLAYERS_VALUE)}>
             <SelectTrigger id="settlement-player-filter" className="h-9 w-full text-sm">
-              <SelectValue />
+              <SelectValue placeholder="All players">
+                {() => selectedPlayerName}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL_PLAYERS_VALUE}>All players</SelectItem>
@@ -196,6 +217,17 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
               ))}
             </SelectContent>
           </Select>
+        </div>
+      ) : null}
+
+      {playerTotals ? (
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <span className="text-emerald-400">
+            Receive {formatUsd(playerTotals.receive)}
+          </span>
+          <span className="text-destructive">
+            Pay {formatUsd(playerTotals.pay)}
+          </span>
         </div>
       ) : null}
 
