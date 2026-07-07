@@ -18,7 +18,7 @@ export default async function TableLayout({ children, params }: TableLayoutProps
   }
 
   return (
-    <>
+    <div className="flex min-h-full flex-col">
       <AppHeader />
       <div className="border-b border-border/60 bg-card/30 pb-3">
         <TableMeta initialTable={table} />
@@ -27,6 +27,6 @@ export default async function TableLayout({ children, params }: TableLayoutProps
         </div>
       </div>
       <main className="flex flex-1 flex-col">{children}</main>
-    </>
+    </div>
   );
 }

@@ -41,8 +41,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
-        <div className="flex flex-1 flex-col">{children}</div>
+      <body className="flex h-dvh flex-col overflow-hidden bg-background">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+          {children}
+        </div>
         <AppFooter />
         <Toaster richColors position="top-center" />
       </body>

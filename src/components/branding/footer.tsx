@@ -2,8 +2,9 @@ import { GITHUB_REPO_URL, KOBY_PROFILE_URL } from "@/lib/constants";
 
 export function AppFooter() {
   return (
-    <footer className="mx-auto w-full max-w-lg px-4 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-      <p className="text-center text-sm text-muted-foreground">
+    <footer className="shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-md">
+      <div className="mx-auto w-full max-w-lg px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <p className="text-center text-sm text-muted-foreground">
         Built by{" "}
         <a
           href={KOBY_PROFILE_URL}
@@ -22,7 +23,8 @@ export function AppFooter() {
         >
           View on GitHub
         </a>
-      </p>
+        </p>
+      </div>
     </footer>
   );
 }
