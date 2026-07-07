@@ -29,15 +29,18 @@ export function formatDate(date: string): string {
 
 export function formatDefaultTableName(isoDate: string): string {
   const [year, month, day] = isoDate.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
   const weekday = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     timeZone: "UTC",
-  }).format(new Date(Date.UTC(year, month - 1, day)));
+  }).format(date);
+  const monthDay = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(date);
 
-  const dd = String(day).padStart(2, "0");
-  const mm = String(month).padStart(2, "0");
-
-  return `Game on ${weekday} (${dd}/${mm}/${year})`;
+  return `${weekday} Night (${monthDay})`;
 }
 
 export function formatPaymentMethod(

@@ -9,9 +9,9 @@ interface TableTabsProps {
 }
 
 const tabs = [
-  { id: "players", label: "Players", href: (slug: string) => `/t/${slug}` },
-  { id: "chips", label: "Chips", href: (slug: string) => `/t/${slug}/cash-out` },
-  { id: "settle", label: "Settle", href: (slug: string) => `/t/${slug}/settlement` },
+  { id: "players", label: "Buy-ins", href: (slug: string) => `/t/${slug}` },
+  { id: "chips", label: "Cash-out", href: (slug: string) => `/t/${slug}/cash-out` },
+  { id: "settle", label: "Pay up", href: (slug: string) => `/t/${slug}/settlement` },
 ] as const;
 
 function activeTab(pathname: string, slug: string): string {

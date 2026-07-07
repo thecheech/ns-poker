@@ -48,8 +48,8 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
     return (
       <div className="mx-auto max-w-lg px-4 pb-8 pt-4">
         <TableCallout
-          message="Close the table on Players before entering chip counts."
-          actionLabel="Go to Players"
+          message="Close the table on Buy-ins before entering chip counts."
+          actionLabel="Go to Buy-ins"
           actionHref={`/t/${table.slug}`}
         />
       </div>
@@ -146,7 +146,7 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
           href={`/t/${table.slug}/settlement`}
           className={cn(buttonVariants(), "h-11 w-full gap-1.5")}
         >
-          Go to Settle
+          Go to Pay up
           <ArrowRight className="size-4" />
         </Link>
       ) : (

@@ -26,34 +26,6 @@ function useTableUrl(slug: string): string {
   return url;
 }
 
-export function CopyTableLinkIconButton({ slug, tableName }: ShareLinkButtonProps) {
-  const url = useTableUrl(slug);
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    if (!url.startsWith("http")) return;
-
-    await navigator.clipboard.writeText(buildShareMessage(url, tableName));
-    setCopied(true);
-    toast.success("Link copied");
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon-xs"
-      className="size-5 shrink-0 text-muted-foreground/45 hover:text-muted-foreground"
-      onClick={handleCopy}
-      disabled={!url.startsWith("http")}
-      aria-label="Copy table link"
-    >
-      {copied ? <Check className="size-3" /> : <Link2 className="size-3" />}
-    </Button>
-  );
-}
-
 export function CopyTableLinkButton({ slug, tableName }: ShareLinkButtonProps) {
   const url = useTableUrl(slug);
   const [copied, setCopied] = useState(false);
@@ -70,13 +42,13 @@ export function CopyTableLinkButton({ slug, tableName }: ShareLinkButtonProps) {
   return (
     <Button
       type="button"
-      variant="outline"
-      className="h-11 flex-1 text-base"
+      variant="default"
+      className="h-10 w-full gap-2 text-sm font-semibold shadow-sm"
       onClick={handleCopy}
       disabled={!url.startsWith("http")}
     >
       {copied ? <Check className="size-4" /> : <Link2 className="size-4" />}
-      {copied ? "Copied!" : "Copy link"}
+      {copied ? "Copied!" : "Copy table link"}
     </Button>
   );
 }

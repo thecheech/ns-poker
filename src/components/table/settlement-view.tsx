@@ -49,7 +49,7 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
       <div className="mx-auto max-w-lg px-4 pb-8 pt-4">
         <TableCallout
           message="Close the table and enter chip counts first."
-          actionLabel="Go to Players"
+          actionLabel="Go to Buy-ins"
           actionHref={`/t/${table.slug}`}
         />
       </div>
@@ -61,7 +61,7 @@ export function SettlementView({ initialTable }: SettlementViewProps) {
       <div className="mx-auto max-w-lg px-4 pb-8 pt-4">
         <TableCallout
           message="Enter all chip counts, then compute settlement."
-          actionLabel="Go to Chips"
+          actionLabel="Go to Cash-out"
           actionHref={`/t/${table.slug}/cash-out`}
           variant="default"
         />

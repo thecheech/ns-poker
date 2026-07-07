@@ -7,7 +7,7 @@ import useSWR from "swr";
 import { toast } from "sonner";
 import { updateTableSettingsAction } from "@/app/actions/table";
 import { DeleteTableButton } from "@/components/delete-table-button";
-import { CopyTableLinkIconButton } from "@/components/share-link-button";
+import { CopyTableLinkButton } from "@/components/share-link-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +24,7 @@ import type { TableState, TableStatus } from "@/lib/types";
 
 const statusLabels: Record<TableStatus, string> = {
   OPEN: "Live",
-  CASHING_OUT: "Chips",
+  CASHING_OUT: "Cash-out",
   SETTLED: "Settled",
 };
 
@@ -104,7 +104,6 @@ export function TableMeta({ initialTable }: TableMetaProps) {
             <h1 className="min-w-0 text-lg font-bold leading-snug tracking-tight">
               {table.name ?? "Poker table"}
             </h1>
-            <CopyTableLinkIconButton slug={table.slug} tableName={table.name} />
             <DeleteTableButton
               slug={table.slug}
               tableName={table.name}
@@ -134,6 +133,9 @@ export function TableMeta({ initialTable }: TableMetaProps) {
           {formatDate(table.date)} · {formatUsd(potUsd)} pot · {table.players.length}{" "}
           {table.players.length === 1 ? "player" : "players"}
         </p>
+        <div className="mt-3">
+          <CopyTableLinkButton slug={table.slug} tableName={table.name} />
+        </div>
       </div>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

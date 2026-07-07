@@ -127,7 +127,7 @@ export function TableView({ initialTable }: TableViewProps) {
       ) : (
         <TableCallout
           message="Table closed. Enter end-of-night chip counts next."
-          actionLabel="Go to Chips"
+            actionLabel="Go to Cash-out"
           actionHref={`/t/${table.slug}/cash-out`}
           secondaryAction={reopenTableButton()}
         />
@@ -147,7 +147,7 @@ export function TableView({ initialTable }: TableViewProps) {
       ) : sortedPlayers.length > 0 ? (
         <TableCallout
           message="Table closed. Enter end-of-night chip counts next."
-          actionLabel="Go to Chips"
+            actionLabel="Go to Cash-out"
           actionHref={`/t/${table.slug}/cash-out`}
           variant="default"
           secondaryAction={reopenTableButton()}

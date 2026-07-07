@@ -53,7 +53,7 @@ export function NsLogo({
         </p>
         {showTagline ? (
           <p className="truncate text-xs text-muted-foreground max-sm:hidden">
-            Network School nights
+            Network School poker nights
           </p>
         ) : null}
       </div>
