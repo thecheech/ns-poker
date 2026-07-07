@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useTransition } from "react";
 import { toast } from "sonner";
 import { reopenTableAction, startCashOutAction } from "@/app/actions/table";
-import { CopyTableLinkButton } from "@/components/share-link-button";
 import { AddPlayerForm } from "@/components/table/add-player-form";
 import { PlayerRow } from "@/components/table/player-row";
 import { TableCallout } from "@/components/table/table-callout";
@@ -82,6 +81,20 @@ export function TableView({ initialTable }: TableViewProps) {
     });
   }
 
+  function reopenTableButton() {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        className="h-10 flex-1"
+        onClick={handleReopenTable}
+        disabled={isPending}
+      >
+        Reopen table
+      </Button>
+    );
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 px-4 pb-8 pt-4">
       {sortedPlayers.length > 0 ? (
@@ -112,58 +125,33 @@ export function TableView({ initialTable }: TableViewProps) {
           </div>
         </div>
       ) : (
-        <div className="space-y-2">
-          <TableCallout
-            message="Table closed. Enter end-of-night chip counts next."
-            actionLabel="Go to Chips"
-            actionHref={`/t/${table.slug}/cash-out`}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10 w-full"
-            onClick={handleReopenTable}
-            disabled={isPending}
-          >
-            Reopen table
-          </Button>
-        </div>
+        <TableCallout
+          message="Table closed. Enter end-of-night chip counts next."
+          actionLabel="Go to Chips"
+          actionHref={`/t/${table.slug}/cash-out`}
+          secondaryAction={reopenTableButton()}
+        />
       )}
 
-      {isOpen ? (
-        <div className="flex gap-2">
-          <CopyTableLinkButton slug={table.slug} tableName={table.name} />
-          {table.players.length > 0 ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="h-11 flex-1 text-base"
-              onClick={handleCloseTable}
-              disabled={isPending}
-            >
-              Close table
-              <ArrowRight className="size-4" />
-            </Button>
-          ) : null}
-        </div>
+      {isOpen && table.players.length > 0 ? (
+        <Button
+          type="button"
+          variant="secondary"
+          className="h-11 w-full text-base"
+          onClick={handleCloseTable}
+          disabled={isPending}
+        >
+          Close table
+          <ArrowRight className="size-4" />
+        </Button>
       ) : sortedPlayers.length > 0 ? (
-        <div className="space-y-2">
-          <TableCallout
-            message="Table closed. Enter end-of-night chip counts next."
-            actionLabel="Go to Chips"
-            actionHref={`/t/${table.slug}/cash-out`}
-            variant="default"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10 w-full"
-            onClick={handleReopenTable}
-            disabled={isPending}
-          >
-            Reopen table
-          </Button>
-        </div>
+        <TableCallout
+          message="Table closed. Enter end-of-night chip counts next."
+          actionLabel="Go to Chips"
+          actionHref={`/t/${table.slug}/cash-out`}
+          variant="default"
+          secondaryAction={reopenTableButton()}
+        />
       ) : null}
     </div>
   );

@@ -4,6 +4,15 @@ import { DEFAULT_CHIPS_PER_USD } from "./constants";
 import { normalizeTable } from "./payments";
 import type { TableState } from "./types";
 
+const RECENT_TABLES_KEY = "tables:recent";
+const MAX_RECENT_TABLES = 50;
+
+export interface RecentTableSummary {
+  slug: string;
+  name: string | null;
+  date: string;
+}
+
 function tableKey(slug: string): string {
   return `table:${slug}`;
 }
@@ -34,17 +43,46 @@ export async function saveTable(state: TableState): Promise<void> {
   await redis.set(tableKey(state.slug), state);
 }
 
+export async function indexRecentTable(slug: string): Promise<void> {
+  const redis = getRedis();
+  await redis.lrem(RECENT_TABLES_KEY, 0, slug);
+  await redis.lpush(RECENT_TABLES_KEY, slug);
+  await redis.ltrim(RECENT_TABLES_KEY, 0, MAX_RECENT_TABLES - 1);
+}
+
+export async function listRecentTables(
+  limit = 20,
+): Promise<RecentTableSummary[]> {
+  const redis = getRedis();
+  const slugs = await redis.lrange<string>(RECENT_TABLES_KEY, 0, limit - 1);
+  if (slugs.length === 0) return [];
+
+  const tables = await Promise.all(slugs.map((slug) => getTable(slug)));
+  return tables
+    .filter((table): table is TableState => table !== null)
+    .map((table) => ({
+      slug: table.slug,
+      name: table.name,
+      date: table.date,
+    }));
+}
+
+function generateTableCode(): string {
+  return nanoid(6);
+}
+
 export async function createTable(): Promise<TableState> {
-  const slug = nanoid(12);
+  let slug = generateTableCode();
+  while (await getTable(slug)) {
+    slug = generateTableCode();
+  }
+
   const now = new Date();
   const date = now.toISOString().slice(0, 10);
 
   const table: TableState = {
     slug,
-    name: `Poker Night · ${new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-    }).format(now)}`,
+    name: slug,
     date,
     chipsPerUsd: DEFAULT_CHIPS_PER_USD,
     status: "OPEN",
@@ -54,6 +92,7 @@ export async function createTable(): Promise<TableState> {
   };
 
   await saveTable(table);
+  await indexRecentTable(slug);
   return table;
 }
 

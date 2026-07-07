@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -8,6 +9,7 @@ interface TableCalloutProps {
   actionLabel: string;
   actionHref: string;
   variant?: "default" | "muted";
+  secondaryAction?: ReactNode;
 }
 
 export function TableCallout({
@@ -15,6 +17,7 @@ export function TableCallout({
   actionLabel,
   actionHref,
   variant = "muted",
+  secondaryAction,
 }: TableCalloutProps) {
   return (
     <div
@@ -24,16 +27,20 @@ export function TableCallout({
       )}
     >
       <p className="text-sm text-muted-foreground">{message}</p>
-      <Link
-        href={actionHref}
-        className={cn(
-          buttonVariants({ variant: variant === "default" ? "default" : "outline" }),
-          "mt-3 h-10 gap-1.5",
-        )}
-      >
-        {actionLabel}
-        <ArrowRight className="size-4" />
-      </Link>
+      <div className={cn("mt-3 flex gap-2", !secondaryAction && "justify-center")}>
+        <Link
+          href={actionHref}
+          className={cn(
+            buttonVariants({ variant: variant === "default" ? "default" : "outline" }),
+            "h-10 gap-1.5",
+            secondaryAction && "flex-1",
+          )}
+        >
+          {actionLabel}
+          <ArrowRight className="size-4" />
+        </Link>
+        {secondaryAction}
+      </div>
     </div>
   );
 }

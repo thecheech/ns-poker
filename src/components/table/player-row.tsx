@@ -96,7 +96,24 @@ export function PlayerRow({
     <>
       <div className="flex items-center gap-3 px-3 py-2.5">
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium">{player.name}</p>
+          <div className="flex min-w-0 items-center gap-0.5">
+            <p className="truncate font-medium">{player.name}</p>
+            {editable ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="size-5 shrink-0 text-muted-foreground/45 hover:text-muted-foreground"
+                onClick={() => {
+                  setEditName(player.name);
+                  setEditOpen(true);
+                }}
+                aria-label={`Edit ${player.name}`}
+              >
+                <Pencil className="size-3" />
+              </Button>
+            ) : null}
+          </div>
           <p className="text-xs text-muted-foreground">
             {buyInCount} {buyInLabel}
           </p>
@@ -105,32 +122,18 @@ export function PlayerRow({
           {formatChips(buyInTotal)}
         </p>
         {editable ? (
-          <div className="flex shrink-0 items-center gap-0.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => {
-                setEditName(player.name);
-                setEditOpen(true);
-              }}
-              aria-label={`Edit ${player.name}`}
-            >
-              <Pencil className="size-3.5" />
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="h-8 gap-1 px-2.5 text-xs"
-              onClick={handleAddBuyIn}
-              disabled={isPending}
-              aria-label={`Add ${formatChips(STANDARD_BUY_IN_CHIPS)} buy-in for ${player.name}`}
-            >
-              <Plus className="size-3.5" />
-              {formatChips(STANDARD_BUY_IN_CHIPS)}
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="h-8 shrink-0 gap-1 px-2.5 text-xs"
+            onClick={handleAddBuyIn}
+            disabled={isPending}
+            aria-label={`Add ${formatChips(STANDARD_BUY_IN_CHIPS)} buy-in for ${player.name}`}
+          >
+            <Plus className="size-3.5" />
+            {formatChips(STANDARD_BUY_IN_CHIPS)}
+          </Button>
         ) : null}
       </div>
 

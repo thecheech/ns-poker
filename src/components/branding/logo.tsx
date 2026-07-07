@@ -1,4 +1,7 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
+
+const LOGO_SRC = "/network-school-logo.jpg";
 
 interface NsLogoProps {
   className?: string;
@@ -13,17 +16,21 @@ export function NsLogoMark({
   className?: string;
   size?: "sm" | "md";
 }) {
+  const dimension = size === "sm" ? 32 : 40;
+
   return (
-    <div
+    <Image
+      src={LOGO_SRC}
+      alt=""
+      width={dimension}
+      height={dimension}
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground shadow-sm",
-        size === "sm" ? "size-8 text-xs" : "size-10 text-sm",
+        "shrink-0 rounded-full object-cover",
+        size === "sm" ? "size-8" : "size-10",
         className,
       )}
       aria-hidden
-    >
-      NS
-    </div>
+    />
   );
 }
 

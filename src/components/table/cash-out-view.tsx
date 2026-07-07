@@ -58,7 +58,6 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
 
   const isSettled = table.status === "SETTLED";
   const balance = validateChipBalance(table.players);
-  const allHaveCashOut = table.players.every((player) => player.cashOut !== null);
 
   function handleCashOut(playerId: string, chips: number) {
     startTransition(async () => {
@@ -156,7 +155,7 @@ export function CashOutView({ initialTable }: CashOutViewProps) {
             type="button"
             className="h-11 w-full"
             onClick={handleSettle}
-            disabled={isPending || !allHaveCashOut || !balance.valid}
+            disabled={isPending}
           >
             Compute settlement
           </Button>

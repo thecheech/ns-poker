@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { STANDARD_BUY_IN_CHIPS } from "@/lib/constants";
-import { computeTransfers, validateChipBalance } from "@/lib/settlement";
+import { computeTransfers } from "@/lib/settlement";
 import { createTable, getTable, updateTable } from "@/lib/store";
 import type { PaymentMethod, TableState } from "@/lib/types";
 import { normalizePaymentMethods, defaultPaymentMethods } from "@/lib/payments";
@@ -14,9 +14,9 @@ function revalidateTable(slug: string) {
   revalidatePath(`/t/${slug}/settlement`);
 }
 
-export async function createTableAction(): Promise<{ slug: string }> {
+export async function createTableAction(): Promise<{ slug: string; name: string }> {
   const table = await createTable();
-  return { slug: table.slug };
+  return { slug: table.slug, name: table.name ?? table.slug };
 }
 
 export async function getTableAction(slug: string): Promise<TableState | null> {
@@ -279,22 +279,17 @@ export async function settleTableAction(slug: string): Promise<void> {
       throw new Error("Table is not in cash-out mode");
     }
 
-    const allHaveCashOut = table.players.every((player) => player.cashOut !== null);
-    if (!allHaveCashOut) {
-      throw new Error("Every player needs a cash-out amount");
-    }
-
-    const balance = validateChipBalance(table.players);
-    if (!balance.valid) {
-      throw new Error(
-        `Chip totals do not balance. Buy-ins: ${balance.buyInTotal}, cash-outs: ${balance.cashOutTotal}`,
-      );
-    }
+    const settledAt = new Date().toISOString();
+    const players = table.players.map((player) => ({
+      ...player,
+      cashOut: player.cashOut ?? { chips: 0, createdAt: settledAt },
+    }));
 
     return {
       ...table,
       status: "SETTLED",
-      transfers: computeTransfers(table.players, table.chipsPerUsd),
+      players,
+      transfers: computeTransfers(players, table.chipsPerUsd),
     };
   });
 
@@ -324,19 +319,33 @@ export async function markTransferPaidAction(input: {
 export async function updateTableSettingsAction(input: {
   slug: string;
   name?: string;
+  date?: string;
   chipsPerUsd?: number;
 }): Promise<void> {
+  if (input.date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
+    throw new Error("Enter a valid date");
+  }
+
   await updateTable(input.slug, (table) => {
-    if (table.status !== "OPEN") {
+    if (input.chipsPerUsd !== undefined && table.status !== "OPEN") {
       throw new Error("Settings can only be changed while table is open");
+    }
+
+    if (input.date !== undefined) {
+      const parsed = new Date(`${input.date}T00:00:00.000Z`);
+      if (Number.isNaN(parsed.getTime())) {
+        throw new Error("Enter a valid date");
+      }
     }
 
     return {
       ...table,
-      name: input.name?.trim() || table.name,
+      name: input.name !== undefined ? input.name.trim() || table.name : table.name,
+      date: input.date ?? table.date,
       chipsPerUsd: input.chipsPerUsd ?? table.chipsPerUsd,
     };
   });
 
   revalidateTable(input.slug);
+  revalidatePath("/");
 }

@@ -15,10 +15,10 @@ export function CreateTableButton() {
   function handleCreate() {
     startTransition(async () => {
       try {
-        const { slug } = await createTableAction();
+        const { slug, name } = await createTableAction();
         addRecentTable({
           slug,
-          name: null,
+          name,
           date: new Date().toISOString().slice(0, 10),
         });
         router.push(`/t/${slug}`);

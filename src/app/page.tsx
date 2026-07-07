@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { NsLogo } from "@/components/branding/logo";
 import { CreateTableButton } from "@/components/home/create-table-button";
 import { RecentTablesList } from "@/components/home/recent-tables";
@@ -18,7 +19,15 @@ export default function HomePage() {
 
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Recent tables</h2>
-          <RecentTablesList />
+          <Suspense
+            fallback={
+              <p className="rounded-2xl border border-dashed bg-card/50 px-4 py-6 text-center text-sm text-muted-foreground">
+                Loading tables...
+              </p>
+            }
+          >
+            <RecentTablesList />
+          </Suspense>
         </section>
 
         <a

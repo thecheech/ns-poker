@@ -1,35 +1,15 @@
-"use client";
-
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { useSyncExternalStore } from "react";
 import { formatDate } from "@/lib/format";
-import {
-  getRecentTables,
-  getRecentTablesServerSnapshot,
-} from "@/lib/recent-tables";
+import { listRecentTables } from "@/lib/store";
 
-function subscribeToRecentTables(onStoreChange: () => void) {
-  const handler = () => onStoreChange();
-  window.addEventListener("storage", handler);
-  window.addEventListener("ns-poker-storage", handler);
-  return () => {
-    window.removeEventListener("storage", handler);
-    window.removeEventListener("ns-poker-storage", handler);
-  };
-}
-
-export function RecentTablesList() {
-  const tables = useSyncExternalStore(
-    subscribeToRecentTables,
-    getRecentTables,
-    getRecentTablesServerSnapshot,
-  );
+export async function RecentTablesList() {
+  const tables = await listRecentTables();
 
   if (tables.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed bg-card/50 px-4 py-6 text-center text-sm text-muted-foreground">
-        Tables you create or join will show up here on this device.
+        Tables you create will show up here.
       </p>
     );
   }
