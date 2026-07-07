@@ -20,10 +20,6 @@ export function defaultPaymentMethod(): PaymentMethod {
   return createEmptyPaymentMethod("CRYPTO");
 }
 
-export function primaryPaymentMethod(methods: PaymentMethod[]): PaymentMethod | null {
-  return methods[0] ?? null;
-}
-
 export function toPaymentMethods(method: PaymentMethod | null): PaymentMethod[] {
   return method ? [method] : [];
 }
@@ -39,9 +35,27 @@ function normalizePaymentMethod(method: PaymentMethod): PaymentMethod {
   };
 }
 
+export function paymentMethodHasDetails(method: PaymentMethod): boolean {
+  if (method.type === "CRYPTO") {
+    return Boolean(method.value || method.chain || method.token || method.link);
+  }
+  if (method.type === "CASH") {
+    return Boolean(method.currency);
+  }
+  return Boolean(method.value || method.link);
+}
+
+function coercePrimaryPaymentMethod(method: PaymentMethod): PaymentMethod {
+  const normalized = normalizePaymentMethod(method);
+  if (normalized.type === "CASH" && !paymentMethodHasDetails(normalized)) {
+    return createEmptyPaymentMethod("CRYPTO");
+  }
+  return normalized;
+}
+
 export function normalizePaymentMethods(methods: PaymentMethod[]): PaymentMethod[] {
   if (methods.length === 0) return [];
-  return [normalizePaymentMethod(methods[0])];
+  return [coercePrimaryPaymentMethod(methods[0])];
 }
 
 export function validatePaymentMethods(methods: PaymentMethod[]): string | null {
@@ -52,14 +66,10 @@ export function validatePaymentMethods(methods: PaymentMethod[]): string | null 
   return null;
 }
 
-export function paymentMethodHasDetails(method: PaymentMethod): boolean {
-  if (method.type === "CRYPTO") {
-    return Boolean(method.value || method.chain || method.token || method.link);
-  }
-  if (method.type === "CASH") {
-    return Boolean(method.currency);
-  }
-  return Boolean(method.value || method.link);
+export function primaryPaymentMethod(methods: PaymentMethod[]): PaymentMethod | null {
+  const method = methods[0];
+  if (!method) return null;
+  return coercePrimaryPaymentMethod(method);
 }
 
 type LegacyPlayer = Player & {

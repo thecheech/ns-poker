@@ -42,7 +42,7 @@ function player(
   return {
     id: nanoid(),
     name,
-    paymentMethods: [{ type: "CASH", value: null }],
+    paymentMethods: [{ type: "CRYPTO", value: null, chain: null, token: null, currency: null, link: null }],
     buyIns: buyIns(buyInCount, createdAt),
     cashOut:
       cashOutChips === null
