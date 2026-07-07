@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { STANDARD_BUY_IN_CHIPS } from "@/lib/constants";
 import { computeTransfers } from "@/lib/settlement";
-import { createTable, getTable, updateTable } from "@/lib/store";
+import { createTable, deleteTable, getTable, updateTable } from "@/lib/store";
 import type { PaymentMethod, TableState } from "@/lib/types";
 import { normalizePaymentMethods, defaultPaymentMethods } from "@/lib/payments";
 
@@ -21,6 +21,17 @@ export async function createTableAction(): Promise<{ slug: string; name: string 
 
 export async function getTableAction(slug: string): Promise<TableState | null> {
   return getTable(slug);
+}
+
+export async function deleteTableAction(slug: string): Promise<void> {
+  const table = await getTable(slug);
+  if (!table) {
+    throw new Error("Table not found");
+  }
+
+  await deleteTable(slug);
+  revalidatePath("/");
+  revalidateTable(slug);
 }
 
 export async function addPlayerAction(input: {

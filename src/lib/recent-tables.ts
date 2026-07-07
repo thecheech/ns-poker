@@ -40,6 +40,14 @@ export function getRecentTablesServerSnapshot(): RecentTable[] {
   return EMPTY_TABLES;
 }
 
+export function removeRecentTable(slug: string): void {
+  if (typeof window === "undefined") return;
+  const next = getRecentTables().filter((table) => table.slug !== slug);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  invalidateRecentTablesCache();
+  window.dispatchEvent(new Event("ns-poker-storage"));
+}
+
 export function addRecentTable(entry: RecentTable): void {
   const existing = getRecentTables().filter((table) => table.slug !== entry.slug);
   const next = [entry, ...existing].slice(0, 10);

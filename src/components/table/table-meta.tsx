@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { updateTableSettingsAction } from "@/app/actions/table";
+import { DeleteTableButton } from "@/components/delete-table-button";
 import { CopyTableLinkIconButton } from "@/components/share-link-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -104,6 +105,11 @@ export function TableMeta({ initialTable }: TableMetaProps) {
               {table.name ?? "Poker table"}
             </h1>
             <CopyTableLinkIconButton slug={table.slug} tableName={table.name} />
+            <DeleteTableButton
+              slug={table.slug}
+              tableName={table.name}
+              redirectTo="/"
+            />
             {isPlayersTab ? (
               <Button
                 type="button"
@@ -154,7 +160,13 @@ export function TableMeta({ initialTable }: TableMetaProps) {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
+            <DeleteTableButton
+              slug={table.slug}
+              tableName={table.name}
+              redirectTo="/"
+              variant="text"
+            />
             <Button onClick={handleSaveSettings} disabled={isPending}>
               Save
             </Button>

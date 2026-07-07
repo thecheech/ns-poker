@@ -44,6 +44,12 @@ export async function saveTable(state: TableState): Promise<void> {
   await redis.set(tableKey(state.slug), state);
 }
 
+export async function deleteTable(slug: string): Promise<void> {
+  const redis = getRedis();
+  await redis.del(tableKey(slug));
+  await redis.lrem(RECENT_TABLES_KEY, 0, slug);
+}
+
 export async function indexRecentTable(slug: string): Promise<void> {
   const redis = getRedis();
   await redis.lrem(RECENT_TABLES_KEY, 0, slug);
