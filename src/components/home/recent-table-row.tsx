@@ -17,10 +17,6 @@ function SettlementLine({ table }: { table: RecentTableSummary }) {
     return null;
   }
 
-  if (settlementPhase === "entering_counts") {
-    return <p className="mt-1 text-xs text-muted-foreground">Entering counts</p>;
-  }
-
   if (settlementPhase === "all_even") {
     return <p className="mt-1 text-xs text-muted-foreground">All even</p>;
   }

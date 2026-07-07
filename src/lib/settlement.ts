@@ -6,7 +6,6 @@ import type { Player, TableState, Transfer } from "./types";
 
 export type SettlementPhase =
   | "not_started"
-  | "entering_counts"
   | "all_even"
   | "settling"
   | "complete";
@@ -159,23 +158,10 @@ export function computeSettlementSummary(
   table: Pick<TableState, "players" | "transfers">,
 ): SettlementSummary {
   const hasCashOuts = table.players.some((player) => player.cashOut !== null);
-  const allCashOuts =
-    table.players.length > 0 &&
-    table.players.every((player) => player.cashOut !== null);
 
   if (!hasCashOuts) {
     return {
       phase: "not_started",
-      settledUsd: 0,
-      unsettledUsd: 0,
-      settledPercent: 0,
-      totalUsd: 0,
-    };
-  }
-
-  if (!allCashOuts) {
-    return {
-      phase: "entering_counts",
       settledUsd: 0,
       unsettledUsd: 0,
       settledPercent: 0,
