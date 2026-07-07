@@ -27,6 +27,19 @@ export function formatDate(date: string): string {
   }).format(new Date(date));
 }
 
+export function formatDefaultTableName(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+
+  const dd = String(day).padStart(2, "0");
+  const mm = String(month).padStart(2, "0");
+
+  return `Game on ${weekday} (${dd}/${mm}/${year})`;
+}
+
 export function formatPaymentMethod(
   type: PaymentType,
   value: string | null,

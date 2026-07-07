@@ -1,6 +1,7 @@
 import { Redis } from "@upstash/redis";
 import { nanoid } from "nanoid";
 import { DEFAULT_CHIPS_PER_USD } from "./constants";
+import { formatDefaultTableName } from "./format";
 import { normalizeTable } from "./payments";
 import type { TableState } from "./types";
 
@@ -82,7 +83,7 @@ export async function createTable(): Promise<TableState> {
 
   const table: TableState = {
     slug,
-    name: slug,
+    name: formatDefaultTableName(date),
     date,
     chipsPerUsd: DEFAULT_CHIPS_PER_USD,
     status: "OPEN",
