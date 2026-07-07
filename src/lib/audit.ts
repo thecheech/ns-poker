@@ -1,10 +1,27 @@
 import { Redis } from "@upstash/redis";
 import { nanoid } from "nanoid";
+import { formatAuditActorName } from "./audit-format";
 import type { AuditAction, AuditEvent } from "./types";
 
 const AUDIT_GLOBAL_KEY = "audit:events";
 const AUDIT_TABLE_KEY_PREFIX = "audit:table:";
 const RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_AUDIT_SCAN = 1000;
+const DEFAULT_AUDIT_PAGE_SIZE = 20;
+
+export interface AuditActorOption {
+  id: string;
+  name: string | null;
+  email: string | null;
+}
+
+export interface AuditEventsResult {
+  events: AuditEvent[];
+  total: number;
+  actors: AuditActorOption[];
+  limit: number;
+  offset: number;
+}
 
 export interface AuditActor {
   id: string;
@@ -92,22 +109,57 @@ export async function recordAuditEvent(input: RecordAuditInput): Promise<void> {
   await trimExpiredEvents(redis, tableAuditKey(input.tableSlug));
 }
 
+function collectAuditActors(events: AuditEvent[]): AuditActorOption[] {
+  const actorMap = new Map<string, AuditActorOption>();
+
+  for (const event of events) {
+    if (actorMap.has(event.actorId)) continue;
+    actorMap.set(event.actorId, {
+      id: event.actorId,
+      name: event.actorName,
+      email: event.actorEmail,
+    });
+  }
+
+  return [...actorMap.values()].sort((left, right) =>
+    formatAuditActorName(left.name, left.email).localeCompare(
+      formatAuditActorName(right.name, right.email),
+    ),
+  );
+}
+
 export async function getAuditEvents(options?: {
   tableSlug?: string;
+  actorId?: string;
+  offset?: number;
   limit?: number;
-}): Promise<AuditEvent[]> {
+}): Promise<AuditEventsResult> {
   const redis = getRedis();
-  const limit = options?.limit ?? 100;
+  const limit = options?.limit ?? DEFAULT_AUDIT_PAGE_SIZE;
+  const offset = Math.max(0, options?.offset ?? 0);
   const key = options?.tableSlug
     ? tableAuditKey(options.tableSlug)
     : AUDIT_GLOBAL_KEY;
 
   await trimExpiredEvents(redis, key);
 
-  const raw = await redis.zrange<string[]>(key, 0, limit - 1, { rev: true });
-  if (!raw?.length) return [];
-
-  return raw
+  const raw = await redis.zrange<string[]>(key, 0, MAX_AUDIT_SCAN - 1, {
+    rev: true,
+  });
+  const allEvents = (raw ?? [])
     .map(parseAuditEvent)
     .filter((event): event is AuditEvent => event !== null);
+
+  const actors = collectAuditActors(allEvents);
+  const filtered = options?.actorId
+    ? allEvents.filter((event) => event.actorId === options.actorId)
+    : allEvents;
+
+  return {
+    events: filtered.slice(offset, offset + limit),
+    total: filtered.length,
+    actors,
+    limit,
+    offset,
+  };
 }

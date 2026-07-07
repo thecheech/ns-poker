@@ -7,7 +7,7 @@ interface TableAuditPageProps {
 
 export default async function TableAuditPage({ params }: TableAuditPageProps) {
   const { slug } = await params;
-  const events = await getAuditEvents({ tableSlug: slug, limit: 100 });
+  const initialData = await getAuditEvents({ tableSlug: slug });
 
   return (
     <div className="mx-auto max-w-lg px-4 pb-8 pt-4">
@@ -19,7 +19,7 @@ export default async function TableAuditPage({ params }: TableAuditPageProps) {
       </section>
 
       <AuditLogView
-        initialEvents={events}
+        initialData={initialData}
         tableSlug={slug}
         showTableColumn={false}
       />

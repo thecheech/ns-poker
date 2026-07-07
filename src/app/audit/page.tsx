@@ -5,7 +5,7 @@ import { getAuditEvents } from "@/lib/audit";
 export const dynamic = "force-dynamic";
 
 export default async function AuditPage() {
-  const events = await getAuditEvents({ limit: 100 });
+  const initialData = await getAuditEvents();
 
   return (
     <div className="flex min-h-full flex-col">
@@ -18,7 +18,7 @@ export default async function AuditPage() {
           </p>
         </section>
 
-        <AuditLogView initialEvents={events} showTableColumn />
+        <AuditLogView initialData={initialData} showTableColumn />
       </main>
     </div>
   );

@@ -1,9 +1,10 @@
-import { getAuditEvents } from "@/lib/audit";
-import type { AuditEvent } from "@/lib/types";
+import { getAuditEvents, type AuditEventsResult } from "@/lib/audit";
 
 export async function getAuditLogAction(options?: {
   tableSlug?: string;
+  actorId?: string;
+  offset?: number;
   limit?: number;
-}): Promise<AuditEvent[]> {
+}): Promise<AuditEventsResult> {
   return getAuditEvents(options);
 }

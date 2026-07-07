@@ -5,13 +5,18 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const tableSlug = request.nextUrl.searchParams.get("tableSlug") ?? undefined;
+  const actorId = request.nextUrl.searchParams.get("actorId") ?? undefined;
   const limitParam = request.nextUrl.searchParams.get("limit");
-  const limit = limitParam ? Number(limitParam) : 100;
+  const offsetParam = request.nextUrl.searchParams.get("offset");
+  const limit = limitParam ? Number(limitParam) : undefined;
+  const offset = offsetParam ? Number(offsetParam) : undefined;
 
-  const events = await getAuditEvents({
+  const result = await getAuditEvents({
     tableSlug,
-    limit: Number.isFinite(limit) ? limit : 100,
+    actorId,
+    limit: limit !== undefined && Number.isFinite(limit) ? limit : undefined,
+    offset: offset !== undefined && Number.isFinite(offset) ? offset : undefined,
   });
 
-  return NextResponse.json(events);
+  return NextResponse.json(result);
 }
