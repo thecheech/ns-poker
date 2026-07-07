@@ -3,7 +3,11 @@ import { nanoid } from "nanoid";
 import { DEFAULT_CHIPS_PER_USD } from "./constants";
 import { chipsToUsd, formatDefaultTableName, totalBuyInChips } from "./format";
 import { normalizeTable } from "./payments";
-import { computeTransfers } from "./settlement";
+import {
+  computeSettlementSummary,
+  computeTransfers,
+  type SettlementPhase,
+} from "./settlement";
 import type { TableState } from "./types";
 
 const RECENT_TABLES_KEY = "tables:recent";
@@ -16,7 +20,10 @@ export interface RecentTableSummary {
   playerCount: number;
   potUsd: number;
   closedLabel: string;
-  paymentsLabel: string;
+  settlementPhase: SettlementPhase;
+  settledUsd: number;
+  unsettledUsd: number;
+  settledPercent: number;
 }
 
 function toRecentTableSummary(table: TableState): RecentTableSummary {
@@ -27,18 +34,11 @@ function toRecentTableSummary(table: TableState): RecentTableSummary {
   const potUsd = chipsToUsd(potChips, table.chipsPerUsd);
   const closedLabel = table.status === "OPEN" ? "Open" : "Closed";
 
-  let paymentsLabel = "—";
   const hasCashOuts = table.players.some((player) => player.cashOut !== null);
-  if (table.status === "CASHING_OUT" || table.status === "SETTLED" || hasCashOuts) {
-    if (table.transfers.length === 0) {
-      paymentsLabel = table.status === "CASHING_OUT" ? "Entering counts" : "All even";
-    } else {
-      const pendingCount = table.transfers.filter(
-        (transfer) => transfer.status === "PENDING",
-      ).length;
-      paymentsLabel = pendingCount === 0 ? "All paid" : `${pendingCount} pending`;
-    }
-  }
+  const transfers = hasCashOuts
+    ? computeTransfers(table.players, table.chipsPerUsd, table.transfers)
+    : table.transfers;
+  const settlement = computeSettlementSummary({ ...table, transfers });
 
   return {
     slug: table.slug,
@@ -47,7 +47,10 @@ function toRecentTableSummary(table: TableState): RecentTableSummary {
     playerCount: table.players.length,
     potUsd,
     closedLabel,
-    paymentsLabel,
+    settlementPhase: settlement.phase,
+    settledUsd: settlement.settledUsd,
+    unsettledUsd: settlement.unsettledUsd,
+    settledPercent: settlement.settledPercent,
   };
 }
 

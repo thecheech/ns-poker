@@ -17,6 +17,7 @@ import { createTable, deleteTable, getTable, updateTable } from "@/lib/store";
 import type { PaymentMethod, TableState } from "@/lib/types";
 
 function revalidateTable(slug: string) {
+  revalidatePath("/");
   revalidatePath(`/t/${slug}`);
   revalidatePath(`/t/${slug}/cash-out`);
   revalidatePath(`/t/${slug}/settlement`);

@@ -10,6 +10,51 @@ interface RecentTableRowProps {
   table: RecentTableSummary;
 }
 
+function SettlementLine({ table }: { table: RecentTableSummary }) {
+  const { settlementPhase } = table;
+
+  if (settlementPhase === "not_started") {
+    return null;
+  }
+
+  if (settlementPhase === "entering_counts") {
+    return <p className="mt-1 text-xs text-muted-foreground">Entering counts</p>;
+  }
+
+  if (settlementPhase === "all_even") {
+    return <p className="mt-1 text-xs text-muted-foreground">All even</p>;
+  }
+
+  if (settlementPhase === "complete") {
+    return (
+      <p className="mt-1 text-xs text-muted-foreground">
+        {formatUsd(table.settledUsd)} settled · All paid
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1.5 space-y-1">
+      <div
+        className="h-1 overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-valuenow={table.settledPercent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div
+          className="h-full rounded-full bg-emerald-500/80"
+          style={{ width: `${table.settledPercent}%` }}
+        />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {formatUsd(table.settledUsd)} settled · {formatUsd(table.unsettledUsd)} unpaid ·{" "}
+        {table.settledPercent}%
+      </p>
+    </div>
+  );
+}
+
 export function RecentTableRow({ table }: RecentTableRowProps) {
   const playerLabel = table.playerCount === 1 ? "1 player" : `${table.playerCount} players`;
 
@@ -26,10 +71,10 @@ export function RecentTableRow({ table }: RecentTableRowProps) {
           <p className="mt-0.5 text-[0.8125rem] text-muted-foreground sm:text-sm">
             {formatDate(table.date)}
           </p>
-          <p className="mt-1.5 line-clamp-2 text-[0.8125rem] leading-snug text-muted-foreground sm:mt-1 sm:truncate sm:text-xs">
-            {playerLabel} · {formatUsd(table.potUsd)} pot · {table.closedLabel} ·{" "}
-            {table.paymentsLabel}
+          <p className="mt-1.5 text-[0.8125rem] leading-snug text-muted-foreground sm:mt-1 sm:text-xs">
+            {playerLabel} · {formatUsd(table.potUsd)} pot · {table.closedLabel}
           </p>
+          <SettlementLine table={table} />
         </div>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground/70 sm:size-5" />
       </Link>

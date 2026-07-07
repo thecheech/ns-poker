@@ -2,7 +2,22 @@ import { nanoid } from "nanoid";
 import { UNMATCHED_PLAYER_ID } from "./constants";
 import { chipsToUsd } from "./format";
 import { defaultPaymentMethods } from "./payments";
-import type { Player, Transfer } from "./types";
+import type { Player, TableState, Transfer } from "./types";
+
+export type SettlementPhase =
+  | "not_started"
+  | "entering_counts"
+  | "all_even"
+  | "settling"
+  | "complete";
+
+export interface SettlementSummary {
+  phase: SettlementPhase;
+  settledUsd: number;
+  unsettledUsd: number;
+  settledPercent: number;
+  totalUsd: number;
+}
 
 interface BalanceEntry {
   playerId: string;
@@ -138,6 +153,63 @@ export function computeTransfers(
   }
 
   return preserveTransferState(transfers, existingTransfers);
+}
+
+export function computeSettlementSummary(
+  table: Pick<TableState, "players" | "transfers">,
+): SettlementSummary {
+  const hasCashOuts = table.players.some((player) => player.cashOut !== null);
+  const allCashOuts =
+    table.players.length > 0 &&
+    table.players.every((player) => player.cashOut !== null);
+
+  if (!hasCashOuts) {
+    return {
+      phase: "not_started",
+      settledUsd: 0,
+      unsettledUsd: 0,
+      settledPercent: 0,
+      totalUsd: 0,
+    };
+  }
+
+  if (!allCashOuts) {
+    return {
+      phase: "entering_counts",
+      settledUsd: 0,
+      unsettledUsd: 0,
+      settledPercent: 0,
+      totalUsd: 0,
+    };
+  }
+
+  if (table.transfers.length === 0) {
+    return {
+      phase: "all_even",
+      settledUsd: 0,
+      unsettledUsd: 0,
+      settledPercent: 100,
+      totalUsd: 0,
+    };
+  }
+
+  const settledUsd = table.transfers
+    .filter((transfer) => transfer.status === "PAID")
+    .reduce((sum, transfer) => sum + transfer.amountUsd, 0);
+  const unsettledUsd = table.transfers
+    .filter((transfer) => transfer.status === "PENDING")
+    .reduce((sum, transfer) => sum + transfer.amountUsd, 0);
+  const totalUsd = Math.round((settledUsd + unsettledUsd) * 100) / 100;
+  const settledPercent =
+    totalUsd > 0 ? Math.round((settledUsd / totalUsd) * 100) : 100;
+
+  return {
+    phase: unsettledUsd < 0.01 ? "complete" : "settling",
+    settledUsd: Math.round(settledUsd * 100) / 100,
+    unsettledUsd: Math.round(unsettledUsd * 100) / 100,
+    settledPercent,
+    totalUsd,
+  };
 }
 
 export function validateChipBalance(players: Player[]): {
